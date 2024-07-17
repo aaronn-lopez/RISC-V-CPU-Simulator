@@ -17,7 +17,28 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
   /**
    * YOUR CODE HERE
    */
-
+  if(idex_reg.ALUOp == 0x10) {
+    switch(idex_reg.instr.rtype.funct3) {
+      case 0x0:
+      switch(idex_reg.instr.rtype.funct7) {
+        case 0x0: //add 
+        alu_control = 0x2;
+          break;
+        case 0x20: //sub
+        alu_control = 0x6;
+        default:
+          break;
+      };
+        break;
+      case 0x7: //and
+      alu_control = 0x0;
+        break;
+      case 0x6: //or
+      alu_control = 0x1;
+      default:
+        break;
+    };
+  }
   return alu_control;
 }
 
@@ -29,12 +50,21 @@ uint32_t execute_alu(uint32_t alu_inp1, uint32_t alu_inp2, uint32_t alu_control)
 {
   uint32_t result;
   switch(alu_control){
-    case 0x0: //add
+    case 0x2: //add
       result = alu_inp1 + alu_inp2;
       break;
     /**
      * YOUR CODE HERE
      */
+    case 0x6: //sub
+      result = alu_inp1 - alu_inp2;
+      break;
+    case 0x0: //and
+      result = alu_inp1 & alu_inp2;
+      break;
+    case 0x1: //or
+      result = alu_inp1 | alu_inp2;
+      break;
     default:
       result = 0xBADCAFFE;
       break;
