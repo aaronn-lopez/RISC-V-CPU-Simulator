@@ -17,6 +17,7 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
   /**
    * YOUR CODE HERE
    */
+
   return alu_control;
 }
 
@@ -79,7 +80,45 @@ idex_reg_t gen_control(Instruction instruction)
         /**
          * YOUR CODE HERE
          */
-          break;
+        idex_reg.ALUOp = 0x10;
+        idex_reg.ALUSrc = 0;
+        idex_reg.Branch = 0;
+        idex_reg.Mem_Read = 0;
+        idex_reg.Mem_Write = 0;
+        idex_reg.Reg_Write = 1;
+        idex_reg.Memto_Reg = 0;
+        break;
+      case 0x03:  //lw
+        if(instruction.itype.funct3 == 0x2) {
+          idex_reg.ALUOp = 0x00;
+          idex_reg.ALUSrc = 1;
+          idex_reg.Branch = 0;
+          idex_reg.Mem_Read = 1;
+          idex_reg.Mem_Write = 0;
+          idex_reg.Reg_Write = 1;
+          idex_reg.Memto_Reg = 1;
+        }
+        break;
+      case 0x23:  //sw
+        if(instruction.stype.funct3 == 0x2) {
+          idex_reg.ALUOp = 0x00;
+          idex_reg.ALUSrc = 1;
+          idex_reg.Branch = 0;
+          idex_reg.Mem_Read = 0;
+          idex_reg.Mem_Write = 1;
+          idex_reg.Reg_Write = 0;
+        }
+        break;
+      case 0x63:  //beq
+        if(instruction.sbtype.funct3 == 0x0) {
+          idex_reg.ALUOp = 0x01;
+          idex_reg.ALUSrc = 0;
+          idex_reg.Branch = 1;
+          idex_reg.Mem_Read = 0;
+          idex_reg.Mem_Write = 0;
+          idex_reg.Reg_Write = 0;
+        }
+        break;
       default:  // Remaining opcodes
           break;
   }

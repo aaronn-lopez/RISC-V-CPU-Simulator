@@ -41,6 +41,13 @@ typedef struct
   /**
    * Add other fields here
    */
+  uint32_t ALUSrc;
+  uint32_t Memto_Reg;
+  uint32_t Reg_Write;
+  uint32_t Mem_Read;
+  uint32_t Mem_Write;
+  uint32_t Branch;
+  uint32_t ALUOp;
   uint32_t instruction_bits;
 }idex_reg_t;
 
