@@ -86,11 +86,20 @@ uint32_t gen_imm(Instruction instruction)
    */
   switch(instruction.opcode) {
         case 0x63: //B-type
-            imm_val = get_branch_offset(instruction);
+            imm_val = sign_extend_number(get_branch_offset(instruction), 13);
             break;
         /**
          * YOUR CODE HERE
          */
+        case 0x03: //I-type
+            imm_val = sign_extend_number(instruction.itype.imm, 12) & ((1U << 5) - 1);
+            break;
+        case 0x13: //I-type except load
+            imm_val = sign_extend_number(instruction.itype.imm, 12);
+            break;
+        case 0x23: //S-type
+            imm_val = get_store_offset(instruction);
+            break;
         default: // R and undefined opcode
             break;
     };
@@ -162,12 +171,33 @@ idex_reg_t gen_control(Instruction instruction)
  * input  : <open to implementation>
  * output : bool
  **/
-bool gen_branch(/*<args>*/)
+bool gen_branch(/*<args>*/Instruction instruction)
 {
   /**
    * YOUR CODE HERE
    */
-  return false;
+  switch(instruction.sbtype.funct3) {
+    case 0x0: //beq
+      if(instruction.sbtype.rs1 == instruction.sbtype.rs2) {
+        return true;
+      }
+      else {
+        return false;
+      }
+      break;
+    case 0x1: //bne
+      if(instruction.sbtype.rs1 != instruction.sbtype.rs2) {
+        return true;
+      }
+      else {
+        return false;
+      }
+      break;
+    default:
+      return false;
+      break;
+  };
+
 }
 
 
