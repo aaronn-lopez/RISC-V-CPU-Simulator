@@ -17,27 +17,92 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
   /**
    * YOUR CODE HERE
    */
-  if(idex_reg.ALUOp == 0x10) {
-    switch(idex_reg.instr.rtype.funct3) {
-      case 0x0:
-      switch(idex_reg.instr.rtype.funct7) {
-        case 0x0: //add 
-        alu_control = 0x2;
+  switch (idex_reg.ALUOp) {
+    case 0x0: // lw or sw
+      alu_control = 0x2; // add
+      break;
+    case 0x1: // beq or bne
+      alu_control = 0x6; // subtract
+      break;
+    case 0x2: // R-type
+      switch (idex_reg.funct3)   {
+        case 0x0:
+          if (idex_reg.funct7 == 0) {
+            alu_control = 0x2; // add
+          } else if (idex_reg.funct7 == 1) {
+            alu_control = 0x6; // subt
+          } else {
+            alu_control = 0xC; // mul
+            }
           break;
-        case 0x20: //sub
-        alu_control = 0x6;
+        case 0x1: 
+          if (idex_reg.funct7 == 0) {
+            alu_control = 0x7; // sll
+          } else if (idex_reg.funct7 == 1) {
+            alu_control = 0xD; // mulh
+          }
+          break;
+        case 0x2: 
+          alu_control = 0x8; // slt
+          break;
+        case 0x4: 
+          alu_control = 0x9; // xor
+          break;
+        case 0x5:
+          if (idex_reg.funct7 == 0) {
+            alu_control = 0xA; // srl
+          } else if (idex_reg.funct7 == 1) {
+            alu_control = 0xB; // sra
+          }
+          break;
+        case 0x6: 
+          alu_control = 0x1; // or
+          break;
+        case 0x7: 
+          alu_control = 0x0; // and
+          break;
         default:
           break;
-      };
+      }
+    case 0x3: // I-type
+	    switch (idex_reg.funct3) {
+        case 0x0: 
+          alu_control = 0x2; // add
+          break;
+        case 0x1: 
+          alu_control = 0x7; // sll
+          break;
+        case 0x2: 
+          alu_control = 0x8; // slt
+          break;
+        case 0x4: 
+          alu_control = 0x9; // xor
+          break;
+        case 0x5:
+            if (idex_reg.funct7 == 0) {
+              alu_control = 0xA; // srl
+            } else if (idex_reg.funct7 == 1) {
+              alu_control = 0xB; // sra
+            }
+            break;
+        case 0x6: 
+          alu_control = 0x1; // or
+          break;
+        case 0x7: 
+          alu_control = 0x0; // and
+          break;
+        default:
+            break;
+      }      
+        break; 
+    case 0x4: // lui
+      alu_control = 0xE;
+      break;
+    case 0x5: // jal
+      alu_control = 0xF;
+      break;
+    default:
         break;
-      case 0x7: //and
-      alu_control = 0x0;
-        break;
-      case 0x6: //or
-      alu_control = 0x1;
-      default:
-        break;
-    };
   }
   return alu_control;
 }
@@ -50,20 +115,44 @@ uint32_t execute_alu(uint32_t alu_inp1, uint32_t alu_inp2, uint32_t alu_control)
 {
   uint32_t result;
   switch(alu_control){
-    case 0x2: //add
-      result = alu_inp1 + alu_inp2;
-      break;
-    /**
-     * YOUR CODE HERE
-     */
-    case 0x6: //sub
-      result = alu_inp1 - alu_inp2;
-      break;
     case 0x0: //and
       result = alu_inp1 & alu_inp2;
       break;
-    case 0x1: //or
+    case 0x1: // or
       result = alu_inp1 | alu_inp2;
+      break;
+    case 0x2: // add
+      result = alu_inp1 + alu_inp2;
+      break;
+    case 0x6: // sub
+      result = alu_inp1 - alu_inp2;
+      break;
+    case 0x7: // sll
+      result = alu_inp1 << alu_inp2;
+      break;
+    case 0x8: // slt
+      result = (int32_t)alu_inp1 < (int32_t)alu_inp2 ? 1 : 0;
+      break;
+    case 0x9: // xor
+      result = alu_inp1 ^ alu_inp2;
+      break;
+    case 0xA: // srl
+      result = alu_inp1 >> alu_inp2;
+      break;
+    case 0xB: // sra
+      result = (int32_t)alu_inp1 >> alu_inp2;
+      break;
+    case 0xC: // mul
+      result = alu_inp1 * alu_inp2;
+      break;
+    case 0xD: // mulh
+      result = ((uint64_t)alu_inp1 * (uint64_t)alu_inp2) >> 32;
+      break;
+    case 0xE: // lui
+      result = alu_inp2 << 12;
+      break;
+    case 0xF: // jal
+      result = alu_inp1 + 4;
       break;
     default:
       result = 0xBADCAFFE;
@@ -190,35 +279,17 @@ idex_reg_t gen_control(Instruction instruction)
  * input  : <open to implementation>
  * output : bool
  **/
-bool gen_branch(/*<args>*/Instruction instruction)
+bool gen_branch(Instruction instr, regfile_t * regfile_p)
 {
-  /**
-   * YOUR CODE HERE
-   */
-  switch(instruction.sbtype.funct3) {
-    case 0x0: //beq
-      if(instruction.sbtype.rs1 == instruction.sbtype.rs2) {
-        return true;
-      }
-      else {
-        return false;
-      }
-      break;
-    case 0x1: //bne
-      if(instruction.sbtype.rs1 != instruction.sbtype.rs2) {
-        return true;
-      }
-      else {
-        return false;
-      }
-      break;
-    default:
-      return false;
-      break;
-  };
-
+  switch (instr.sbtype.funct3) {
+    case 0x0: // beq
+        return regfile_p->R[instr.sbtype.rs1] == regfile_p->R[instr.sbtype.rs2];
+    case 0x1: // bne
+        return regfile_p->R[instr.sbtype.rs1] != regfile_p->R[instr.sbtype.rs2];
+	default:
+  return false;
+  }
 }
-
 
 /// PIPELINE FEATURES ///
 
