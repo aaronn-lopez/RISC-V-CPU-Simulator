@@ -85,20 +85,21 @@ uint32_t gen_imm(Instruction instruction)
    * YOUR CODE HERE
    */
   switch(instruction.opcode) {
-        case 0x63: //B-type
-            imm_val = sign_extend_number(get_branch_offset(instruction), 13);
+        case 0x03: //L-type
+	      case 0x13: //I-type
+            imm_val = sign_extend_number(instruction.itype.imm,12); 
             break;
-        /**
-         * YOUR CODE HERE
-         */
-        case 0x03: //I-type
-            imm_val = sign_extend_number(instruction.itype.imm, 12) & ((1U << 5) - 1);
-            break;
-        case 0x13: //I-type except load
-            imm_val = sign_extend_number(instruction.itype.imm, 12);
-            break;
-        case 0x23: //S-type
+	      case 0x23: //S-type
             imm_val = get_store_offset(instruction);
+            break;
+	      case 0x37: //U-type
+            imm_val = instruction.utype.imm;
+            break;
+        case 0x6f: //UJ-type
+            imm_val = get_jump_offset(instruction);
+            break;
+        case 0x63: //SB-type
+            imm_val = sign_extend_number(get_branch_offset(instruction), 13);
             break;
         default: // R and undefined opcode
             break;
@@ -116,50 +117,68 @@ idex_reg_t gen_control(Instruction instruction)
   idex_reg_t idex_reg = {0};
   switch(instruction.opcode) {
       case 0x33:  //R-type
-        /**
-         * YOUR CODE HERE
-         */
-        idex_reg.ALUOp = 0x10;
+        idex_reg.ALUOp = 0x2;
         idex_reg.ALUSrc = 0;
         idex_reg.Branch = 0;
         idex_reg.Mem_Read = 0;
+        idex_reg.Memto_Reg = 0;
         idex_reg.Mem_Write = 0;
         idex_reg.Reg_Write = 1;
+        break;
+      case 0x13: // I-type except load
+        idex_reg.ALUOp = 0x3;
+        idex_reg.ALUSrc = 1;
+        idex_reg.Branch = 0;
+        idex_reg.Mem_Read = 0;
+        idex_reg.Memto_Reg = 0; 
+        idex_reg.Mem_Write = 0;
+        idex_reg.Reg_Write = 1;
+        break;
+      case 0x03: // Load
+        idex_reg.ALUOp = 0;
+        idex_reg.ALUSrc = 1;
+        idex_reg.Branch = 0;
+        idex_reg.Mem_Read = 1;
+        idex_reg.Memto_Reg = 1;
+        idex_reg.Mem_Write = 0;
+        idex_reg.Reg_Write = 1;
+        break;
+      case 0x23: // Store
+        idex_reg.ALUOp = 0;
+        idex_reg.ALUSrc = 1;
+        idex_reg.Branch = 0;
+        idex_reg.Mem_Read = 0;
         idex_reg.Memto_Reg = 0;
+        idex_reg.Mem_Write = 1;
+        idex_reg.Reg_Write = 0;
         break;
-      case 0x03:  //lw
-        if(instruction.itype.funct3 == 0x2) {
-          idex_reg.ALUOp = 0x00;
-          idex_reg.ALUSrc = 1;
-          idex_reg.Branch = 0;
-          idex_reg.Mem_Read = 1;
-          idex_reg.Mem_Write = 0;
-          idex_reg.Reg_Write = 1;
-          idex_reg.Memto_Reg = 1;
-        }
+      case 0x37: // U-type
+        idex_reg.ALUOp = 0x4;
+        idex_reg.ALUSrc = 1;
+        idex_reg.Branch = 0;
+        idex_reg.Mem_Read = 0;
+        idex_reg.Memto_Reg = 0;
+        idex_reg.Mem_Write = 0;
+        idex_reg.Reg_Write = 1;
         break;
-      case 0x23:  //sw
-        if(instruction.stype.funct3 == 0x2) {
-          idex_reg.ALUOp = 0x00;
-          idex_reg.ALUSrc = 1;
-          idex_reg.Branch = 0;
-          idex_reg.Mem_Read = 0;
-          idex_reg.Mem_Write = 1;
-          idex_reg.Reg_Write = 0;
-        }
+      case 0x6f: // J-type
+        idex_reg.ALUOp = 0x5;
+        idex_reg.ALUSrc = 0;
+        idex_reg.Branch = 1;
+        idex_reg.Mem_Read = 0;
+        idex_reg.Memto_Reg = 0;
+        idex_reg.Mem_Write = 0;
+        idex_reg.Reg_Write = 1;
         break;
-      case 0x63:  //beq
-        if(instruction.sbtype.funct3 == 0x0) {
-          idex_reg.ALUOp = 0x01;
-          idex_reg.ALUSrc = 0;
-          idex_reg.Branch = 1;
-          idex_reg.Mem_Read = 0;
-          idex_reg.Mem_Write = 0;
-          idex_reg.Reg_Write = 0;
-        }
-        break;
+      case 0x63: // SB-type
+        idex_reg.ALUOp = 0x1;
+        idex_reg.ALUSrc = 0;
+        idex_reg.Branch = 1;
+        idex_reg.Mem_Read = 0;
+        idex_reg.Mem_Write = 0;
+        idex_reg.Reg_Write = 0;
       default:  // Remaining opcodes
-          break;
+        break;
   }
   return idex_reg;
 }
