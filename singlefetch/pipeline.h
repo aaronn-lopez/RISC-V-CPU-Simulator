@@ -31,49 +31,62 @@ typedef struct
   /**
    * Add other fields here
    */
-  uint32_t instruction_bits;
 }ifid_reg_t;
 
 typedef struct
 {
   Instruction instr;
   uint32_t    instr_addr;
-  /**
-   * Add other fields here
-   */
-  uint32_t ALUSrc;
-  uint32_t Memto_Reg;
-  uint32_t Reg_Write;
-  uint32_t Mem_Read;
-  uint32_t Mem_Write;
-  uint32_t Branch;
-  uint32_t ALUOp;
-  uint32_t instruction_bits;
+  uint8_t rs1;
+  uint8_t rs2;
+  uint32_t rs1_val;
+  uint32_t rs2_val;
+  uint32_t imm;
+  uint32_t funct3;
+  uint32_t funct7;
+  uint32_t rd;  
+  uint32_t ALU_in_1;
+  uint32_t ALU_in_2;
+  uint32_t alu_control;
+  uint8_t ALUOp;
+  bool ALUSrc;
+  bool Branch;
+  bool Mem_Read;
+  bool Mem_Write;
+  bool Memto_Reg;
+  bool Reg_Write;
 }idex_reg_t;
 
 typedef struct
 {
   Instruction instr;
   uint32_t    instr_addr;
-  /**
-   * Add other fields here
-   */
-  uint32_t instruction_bits;
-  uint32_t reg1;
-  uint32_t reg2;
-  uint32_t imm;
+  uint32_t    instr_addr_imm;
+  bool zero;
+  uint32_t Read_Address;
+  uint32_t Write_Address;
+  uint8_t rd;
+  uint32_t funct3;
+  uint32_t contents;
+  bool Branch;
+  bool Mem_Read;
+  bool Mem_Write;
+  bool Memto_Reg;
+  bool Reg_Write;
 }exmem_reg_t;
 
 typedef struct
 {
   Instruction instr;
-  uint32_t    instr_addr;
-  /**
-   * Add other fields here
-   */
-  uint32_t instruction_bits;
+  uint32_t instr_addr;
+  uint32_t instr_addr_imm;
+  uint32_t Read_Data;
+  uint32_t Read_Address;
+  uint32_t Write_Data;
+  uint8_t rd;
+  bool Memto_Reg;
+  bool Reg_Write;
 }memwb_reg_t;
-
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Register types with input and output variants for simulator
@@ -120,6 +133,7 @@ typedef struct
   bool      pcsrc;
   uint32_t  pc_src0;
   uint32_t  pc_src1;
+  bool Reg_Write;
   /**
    * Add other fields here
    */
