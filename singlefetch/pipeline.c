@@ -30,21 +30,23 @@ void bootstrap(pipeline_wires_t* pwires_p, pipeline_regs_t* pregs_p, regfile_t* 
 ifid_reg_t stage_fetch(pipeline_wires_t* pwires_p, regfile_t* regfile_p, Byte* memory_p)
 {
   ifid_reg_t ifid_reg = {0};
-  /**
-   * YOUR CODE HERE
-   */
+ 
+  // MUX
+  if(pwires_p->pcsrc){ 
+      regfile_p->PC = pwires_p->pc_src1; // PC+offset
+  } else {
+      regfile_p->PC = pwires_p->pc_src0; // PC+4
+  }
 
-  uint32_t instruction_bits = *((uint32_t*) &memory_p[regfile_p->PC]);
-  // try this and see if this fix errors
-  // uint32_t instruction_bits = *(uint32_t *)(memory_p + regfile_p->PC);
+  // Get instruction from memory
+  uint32_t instruction_bits = *(uint32_t *)(memory_p + regfile_p->PC);
 
   #ifdef DEBUG_CYCLE
   printf("[IF ]: Instruction [%08x]@[%08x]: ", instruction_bits, regfile_p->PC);
   decode_instruction(instruction_bits);
   #endif
+  ifid_reg.instr.bits = instruction_bits;
   ifid_reg.instr_addr = regfile_p->PC;
-  ifid_reg.instruction_bits = instruction_bits;
-  regfile_p->PC += 4;
   return ifid_reg;
 }
 
@@ -58,14 +60,46 @@ idex_reg_t stage_decode(ifid_reg_t ifid_reg, pipeline_wires_t* pwires_p, regfile
   /**
    * YOUR CODE HERE
    */
-  
+
+  // updating idex_reg
+  idex_reg = gen_control(ifid_reg.instr);
+  idex_reg.instr = ifid_reg.instr;  
+  idex_reg.instr.bits = ifid_reg.instr.bits;
+  idex_reg.instr_addr = ifid_reg.instr_addr;
+
+  switch((idex_reg.instr.bits) & ((1U << 7) - 1)) {
+  case 0x33:
+  case 0x23:
+    idex_reg.rs1 = (idex_reg.instr.bits >> 15) & ((1U << 5) - 1);
+    idex_reg.rs2 = (idex_reg.instr.bits >> 20) & ((1U << 5)  -1);
+    idex_reg.rs1_val = regfile_p->R[idex_reg.rs1];
+    idex_reg.rs2_val = regfile_p->R[idex_reg.rs2];
+    break;
+  case 0x63:
+    idex_reg.rs1 = (idex_reg.instr.bits >> 15)&((1U << 5) - 1);
+    idex_reg.rs2 = (idex_reg.instr.bits >> 20)&((1U << 5) - 1);
+    idex_reg.rs1_val = regfile_p->R[idex_reg.rs1];
+    idex_reg.rs2_val = regfile_p->R[idex_reg.rs2];
+    idex_reg.Branch = gen_branch(idex_reg.instr, regfile_p);
+    break;
+  case 0x03:
+  case 0x13:
+    idex_reg.rs1 = (idex_reg.instr.bits >> 15) & ((1U << 5) - 1);
+    idex_reg.rs1_val = regfile_p->R[idex_reg.rs1];
+    break;
+  default:
+    break;
+  }
+
+  idex_reg.imm = gen_imm(idex_reg.instr);
+  idex_reg.rd = (idex_reg.instr.bits >> 7) & ((1U << 5) - 1);
+  idex_reg.funct7 = (((idex_reg.instr.bits >> 30) & 1U));    
+  idex_reg.funct3 = ((idex_reg.instr.bits >> 12) & ((1U << 3) - 1));
 
   #ifdef DEBUG_CYCLE
-  printf("[ID ]: Instruction [%08x]@[%08x]: ", ifid_reg.instruction_bits, ifid_reg.instr_addr);
-  decode_instruction(ifid_reg.instruction_bits);
+  printf("[ID ]: Instruction [%08x]@[%08x]: ", ifid_reg.instr.bits, ifid_reg.instr_addr);
+  decode_instruction(ifid_reg.instr.bits);
   #endif
-  idex_reg.instr_addr = ifid_reg.instr_addr;
-  idex_reg.instruction_bits = ifid_reg.instruction_bits;
   return idex_reg;
 }
 
@@ -79,12 +113,61 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
   /**
    * YOUR CODE HERE
    */
-   #ifdef DEBUG_CYCLE
-  printf("[EX ]: Instruction [%08x]@[%08x]: ", idex_reg.instruction_bits, idex_reg.instr_addr);
-  decode_instruction(idex_reg.instruction_bits);
+
+  if (idex_reg.ALUOp == 0x5){
+  idex_reg.ALU_in_1 = idex_reg.instr_addr;
+  } else {
+  idex_reg.ALU_in_1 = idex_reg.rs1_val;
+  }
+
+  if (idex_reg.ALUSrc) { // MUX
+  idex_reg.ALU_in_2 = idex_reg.imm;
+  }
+  else {
+  idex_reg.ALU_in_2 = idex_reg.rs2_val;
+  }
+
+// ALU execution
+  idex_reg.alu_control = gen_alu_control(idex_reg);
+  exmem_reg.Read_Address = execute_alu(idex_reg.ALU_in_1, idex_reg.ALU_in_2, idex_reg.alu_control);
+    
+  if (idex_reg.ALUOp == 0x1 && exmem_reg.Read_Address == 0) {
+      exmem_reg.zero = 1;
+  }
+  else if (idex_reg.ALUOp == 0x5) { // jal
+	exmem_reg.zero = 1;
+    }
+  else {
+      exmem_reg.zero = 0;
+    }
+  
+// adder
+if (idex_reg.Branch) {
+  exmem_reg.instr_addr_imm = idex_reg.instr_addr + idex_reg.imm;
+} else {
+  exmem_reg.instr_addr_imm = idex_reg.instr_addr;
+}
+
+  exmem_reg.instr_addr = idex_reg.instr_addr; 
+
+  // Pass to exmem
+  exmem_reg.rd = idex_reg.rd;
+  exmem_reg.Write_Address = idex_reg.rs2_val;
+  exmem_reg.instr = idex_reg.instr;  
+  exmem_reg.instr.bits = idex_reg.instr.bits;
+  exmem_reg.funct3 = idex_reg.funct3;
+
+  // Pass to exmem
+  exmem_reg.Mem_Read = idex_reg.Mem_Read;
+  exmem_reg.Mem_Write = idex_reg.Mem_Write;
+  exmem_reg.Memto_Reg = idex_reg.Memto_Reg;
+  exmem_reg.Reg_Write = idex_reg.Reg_Write;
+  exmem_reg.Branch = idex_reg.Branch;
+
+  #ifdef DEBUG_CYCLE
+  printf("[EX ]: Instruction [%08x]@[%08x]: ", idex_reg.instr.bits, idex_reg.instr_addr);
+  decode_instruction(idex_reg.instr.bits);
   #endif
-  exmem_reg.instr_addr = idex_reg.instr_addr;
-  exmem_reg.instruction_bits = idex_reg.instruction_bits;
   return exmem_reg;
 }
 
@@ -92,19 +175,74 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
  * STAGE  : stage_mem
  * output : memwb_reg_t
  **/ 
+/*
+Only for Load/Store
+stage_mem: This function has access to exmem_reg, pipeline wires, and data memory. It
+works on accessing the data memory and passing down the values to memwb_reg (of
+memwb_reg_t type).
+*/
 memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* memory_p, Cache* cache_p)
 {
   memwb_reg_t memwb_reg = {0};
   /**
    * YOUR CODE HERE
    */
-   #ifdef DEBUG_CYCLE
-  printf("[MEM]: Instruction [%08x]@[%08x]: ", exmem_reg.instruction_bits, exmem_reg.instr_addr);
-  decode_instruction(exmem_reg.instruction_bits);
-  #endif
-  memwb_reg.instr_addr = exmem_reg.instr_addr;
-  memwb_reg.instruction_bits = exmem_reg.instruction_bits;
 
+if (exmem_reg.Mem_Read) {
+    switch (exmem_reg.funct3) {
+        case 0x0: // lb
+            exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_BYTE), 8);
+            break;
+        case 0x1: // lh
+            exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD), 16);
+            break;
+        case 0x2: // lw
+            exmem_reg.contents = load(memory_p, exmem_reg.Read_Address, LENGTH_WORD);
+            break;
+        default:
+            exmem_reg.contents = 0; // invalid funct3
+            break;
+    }
+
+    memwb_reg.Read_Data = exmem_reg.contents;
+}
+
+    if (exmem_reg.Mem_Write) {
+        switch (exmem_reg.funct3) {
+            case 0x0: // sb
+                store(memory_p, exmem_reg.Read_Address, LENGTH_BYTE, exmem_reg.Write_Address & 0xFF);
+                break;
+            case 0x1: // sh
+                store(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD, exmem_reg.Write_Address & 0xFFFF);
+                break;
+            case 0x2: // sw
+                store(memory_p, exmem_reg.Read_Address, LENGTH_WORD, exmem_reg.Write_Address);
+                break;
+            default:
+                break;
+        }
+    }
+
+    
+    memwb_reg.rd = exmem_reg.rd;
+    
+    memwb_reg.Memto_Reg = exmem_reg.Memto_Reg;
+    memwb_reg.Reg_Write = exmem_reg.Reg_Write;
+    memwb_reg.instr = exmem_reg.instr;
+    memwb_reg.instr_addr = exmem_reg.instr_addr;
+    memwb_reg.instr_addr_imm = exmem_reg.instr_addr_imm;
+    memwb_reg.Read_Address = exmem_reg.Read_Address;
+
+    //Create pcsrc wire
+    pwires_p->pcsrc = exmem_reg.Branch & exmem_reg.zero;
+
+    // Return pc_src1 to IF MUX
+    pwires_p->pc_src1 = memwb_reg.instr_addr_imm;    
+
+  #ifdef DEBUG_CYCLE
+  printf("[MEM]: Instruction [%08x]@[%08x]: ", exmem_reg.instr.bits, exmem_reg.instr_addr);
+  decode_instruction(exmem_reg.instr.bits);
+  #endif
   return memwb_reg;
 }
 
@@ -112,16 +250,41 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
  * STAGE  : stage_writeback
  * output : nothing - The state of the register file may be changed
  **/ 
+/*
+Only for Load, arithmetic, logical instructions
+stage_writeback: This function has access to memwb_reg, pipeline wires, and register file.
+It is working on writing the results to the destination register (rd).
+*/
 void stage_writeback(memwb_reg_t memwb_reg, pipeline_wires_t* pwires_p, regfile_t* regfile_p)
 {
   /**
-   * YOUR CODE HERE
-   */
+  * YOUR CODE HERE
+  */
+
+    // Only write back if Reg_Write is true
+    if (memwb_reg.Reg_Write) {
+    	    // Determine whether to write from Read_Data or Read_Address
+        if (memwb_reg.Memto_Reg) {
+            memwb_reg.Write_Data = memwb_reg.Read_Data;
+        } else {
+            memwb_reg.Write_Data = memwb_reg.Read_Address; // stored in Read_Address
+        }
+
+        // Write data to register
+        if (memwb_reg.rd != 0) { // Avoid writing to register x0
+            regfile_p->R[memwb_reg.rd] = memwb_reg.Write_Data;
+        }
+    }
+
+  pwires_p->Reg_Write = memwb_reg.Reg_Write;
+  pwires_p->pc_src0 = regfile_p->PC+4;
+ 
+
   #ifdef DEBUG_CYCLE
-  printf("[WB ]: Instruction [%08x]@[%08x]: ", memwb_reg.instruction_bits, memwb_reg.instr_addr);
-  decode_instruction(memwb_reg.instruction_bits);
+  printf("[WB ]: Instruction [%08x]@[%08x]: ", memwb_reg.instr.bits, memwb_reg.instr_addr );
+  decode_instruction(memwb_reg.instr.bits);
   #endif
-  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
