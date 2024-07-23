@@ -278,7 +278,6 @@ void stage_writeback(memwb_reg_t memwb_reg, pipeline_wires_t* pwires_p, regfile_
 
   pwires_p->Reg_Write = memwb_reg.Reg_Write;
   pwires_p->pc_src0 = regfile_p->PC+4;
- 
 
   #ifdef DEBUG_CYCLE
   printf("[WB ]: Instruction [%08x]@[%08x]: ", memwb_reg.instr.bits, memwb_reg.instr_addr );

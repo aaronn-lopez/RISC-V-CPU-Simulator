@@ -185,7 +185,7 @@ uint32_t gen_imm(Instruction instruction)
             imm_val = instruction.utype.imm;
             break;
         case 0x6f: //UJ-type
-            imm_val = get_jump_offset(instruction);
+            imm_val = sign_extend_number(get_jump_offset(instruction), 21);
             break;
         case 0x63: //SB-type
             imm_val = sign_extend_number(get_branch_offset(instruction), 13);
