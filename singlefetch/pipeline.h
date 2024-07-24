@@ -133,6 +133,8 @@ typedef struct
   uint32_t  pc_src0;
   uint32_t  pc_src1;
   bool Reg_Write;
+  uint32_t forwardA;
+  uint32_t forwardB;
   /**
    * Add other fields here
    */
