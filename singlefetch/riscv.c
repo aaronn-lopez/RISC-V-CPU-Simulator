@@ -1,3 +1,4 @@
+#include "config.h"
 #include "riscv.h"
 #include <assert.h>
 #include <getopt.h>
@@ -25,7 +26,7 @@ void execute_emu(regfile_t *regfile, int prompt, int print) {
   /* interactive-mode prompt */
   if (prompt) {
     if (prompt == 1) {
-      printf("simulator paused,enter to continue...");
+      printf("emulator paused,enter to continue...");
       while (getchar() != '\n')
         ;
     }
@@ -232,11 +233,19 @@ int main(int argc, char **argv) {
       cycle_pipeline(&regfile, memory, &cache, &pipeline_regs, &pipeline_wires, &ecall_exit);
       simins++;
     }
-      #ifdef DEBUG_CACHE_TRACE
-      printf("Number of cache accesses = %5ld\n", hit_count+miss_count);
-      printf("Number of cache hits     = %5ld\n", hit_count);
-      printf("Number of cache misses   = %5ld\n", miss_count);
-      #endif
+
+    #ifdef PRINT_STATS
+    printf("#Cycles            = %5ld\n", total_cycle_counter);
+    printf("#Forwards (EX-EX)  = %5ld\n", fwd_exex_counter);
+    printf("#Forwards (EX-MEM) = %5ld\n", fwd_exmem_counter);
+    printf("#Branches taken    = %5ld\n", branch_counter);
+    printf("#Stalls            = %5ld\n", stall_counter);
+    #endif
+    #ifdef DEBUG_CACHE_TRACE
+    printf("Number of cache accesses = %5ld\n", hit_count+miss_count);
+    printf("Number of cache hits     = %5ld\n", hit_count);
+    printf("Number of cache misses   = %5ld\n", miss_count);
+    #endif
   }
 
   // print mem

@@ -9,6 +9,10 @@
 uint64_t total_cycle_counter = 0;
 uint64_t miss_count = 0;
 uint64_t hit_count = 0;
+uint64_t stall_counter = 0;
+uint64_t branch_counter = 0;
+uint64_t fwd_exex_counter = 0;
+uint64_t fwd_exmem_counter= 0;
 simulator_config_t sim_config = {0};
 
 ///////////////////////////////////////////////////////////////////////////////

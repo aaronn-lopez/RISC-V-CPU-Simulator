@@ -1,24 +1,23 @@
 #ifndef __PIPELINE_H__
 #define __PIPELINE_H__
 
+#include "config.h"
 #include "types.h"
 #include "cache.h"
 #include <stdbool.h>
-
-// enable `DEBUG_CYCLE` this after completing the code in each stage
-#define DEBUG_CYCLE
-#define DEBUG_REG_TRACE         // prints the register trace after each cycle
-//#define DEBUG_CACHE_TRACE       // prints the cache trace at the end of program
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Functionality
 ///////////////////////////////////////////////////////////////////////////////
 
-#define MEM_LATENCY 0
 extern simulator_config_t sim_config;
 extern uint64_t miss_count;
 extern uint64_t hit_count;
 extern uint64_t total_cycle_counter;
+extern uint64_t stall_counter;
+extern uint64_t branch_counter;
+extern uint64_t fwd_exex_counter;
+extern uint64_t fwd_exmem_counter;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// RISC-V Pipeline Register Types
