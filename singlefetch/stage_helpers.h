@@ -311,23 +311,22 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 
   if(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0)){
     if(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1){
-      printf("[FWD]: Resolving EX hazard on rs1: %ld", pregs_p->idex_preg.out.rs1_val);
+      printf("[FWD]: Resolving EX hazard on rs1: x%ld\n", pregs_p->idex_preg.out.rs1);
       pwires_p->forwardA = 0x2;
-
     }
     if(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2){
-      printf("[FWD]: Resolving EX hazard on rs2: %ld", pregs_p->idex_preg.out.rs2_val);
+      printf("[FWD]: Resolving EX hazard on rs2: x%ld\n", pregs_p->idex_preg.out.rs2);
       pwires_p->forwardB = 0x2;
     }
   }
   if(pregs_p->memwb_preg.out.Reg_Write && (pregs_p->memwb_preg.out.rd != 0)){
-    if(!(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0))){
+    if(!(pregs_p->exmem_preg.out.Reg_Write && !(pregs_p->exmem_preg.out.rd != 0))){
       if(!(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1) && (pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs1)){
-        printf("[FWD]: Resolving MEM hazard on rs1: %ld", pregs_p->idex_preg.out.rs1_val);
+        printf("[FWD]: Resolving MEM hazard on rs1: x%ld\n", pregs_p->idex_preg.out.rs1);
         pwires_p->forwardA = 0x1;
       }
       if(!(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2) && (pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs2)){
-        printf("[FWD]: Resolving MEM hazard on rs2: %ld", pregs_p->idex_preg.out.rs2_val);
+        printf("[FWD]: Resolving MEM hazard on rs2: x%ld\n", pregs_p->idex_preg.out.rs2);
         pwires_p->forwardB = 0x1;
       }
     }

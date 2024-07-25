@@ -118,17 +118,39 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
    * YOUR CODE HERE
    */
 
-  if (idex_reg.ALUOp == 0x5){
-  idex_reg.ALU_in_1 = idex_reg.instr_addr;
-  } else {
-  idex_reg.ALU_in_1 = idex_reg.rs1_val;
+  //MUX for first ALU operand
+  if(pwires_p->forwardA == 0x0) {
+    if (idex_reg.ALUOp == 0x5){
+      idex_reg.ALU_in_1 = idex_reg.instr_addr;
+    } else {
+      idex_reg.ALU_in_1 = idex_reg.rs1_val;
+    }
+  }
+  else if(pwires_p->forwardA == 0x1) {
+    idex_reg.ALU_in_1 = pwires_p->Write_Data;
+    fwd_exmem_counter++;
+  }
+  else if(pwires_p->forwardA == 0x2) {
+    idex_reg.ALU_in_1 = pwires_p->Read_Address;
+    fwd_exex_counter++;
   }
 
-  if (idex_reg.ALUSrc) { // MUX
-  idex_reg.ALU_in_2 = idex_reg.imm;
+  //MUX for second ALU operand
+  if(pwires_p->forwardB == 0x0) {
+    if (idex_reg.ALUSrc) { 
+      idex_reg.ALU_in_2 = idex_reg.imm;
+    }
+    else {
+      idex_reg.ALU_in_2 = idex_reg.rs2_val;
+    }
   }
-  else {
-  idex_reg.ALU_in_2 = idex_reg.rs2_val;
+  else if(pwires_p->forwardB == 0x1) {
+    idex_reg.ALU_in_2 = pwires_p->Write_Data;
+    fwd_exmem_counter++;
+  }
+  else if(pwires_p->forwardB == 0x2) {
+    idex_reg.ALU_in_2 = pwires_p->Read_Address;
+    fwd_exex_counter++;
   }
 
 // ALU execution
@@ -192,56 +214,57 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
    * YOUR CODE HERE
    */
 
-if (exmem_reg.Mem_Read) {
-    switch (exmem_reg.funct3) {
-        case 0x0: // lb
-            exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_BYTE), 8);
-            break;
-        case 0x1: // lh
-            exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD), 16);
-            break;
-        case 0x2: // lw
-            exmem_reg.contents = load(memory_p, exmem_reg.Read_Address, LENGTH_WORD);
-            break;
-        default:
-            exmem_reg.contents = 0; // invalid funct3
-            break;
-    }
+  pwires_p->Read_Address = exmem_reg.Read_Address;
 
-    memwb_reg.Read_Data = exmem_reg.contents;
-}
+  if (exmem_reg.Mem_Read) {
+      switch (exmem_reg.funct3) {
+          case 0x0: // lb
+              exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_BYTE), 8);
+              break;
+          case 0x1: // lh
+              exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD), 16);
+              break;
+          case 0x2: // lw
+              exmem_reg.contents = load(memory_p, exmem_reg.Read_Address, LENGTH_WORD);
+              break;
+          default:
+              exmem_reg.contents = 0; // invalid funct3
+              break;
+      }
 
-    if (exmem_reg.Mem_Write) {
-        switch (exmem_reg.funct3) {
-            case 0x0: // sb
-                store(memory_p, exmem_reg.Read_Address, LENGTH_BYTE, exmem_reg.Write_Address & 0xFF);
-                break;
-            case 0x1: // sh
-                store(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD, exmem_reg.Write_Address & 0xFFFF);
-                break;
-            case 0x2: // sw
-                store(memory_p, exmem_reg.Read_Address, LENGTH_WORD, exmem_reg.Write_Address);
-                break;
-            default:
-                break;
-        }
-    }
+      memwb_reg.Read_Data = exmem_reg.contents;
+  }
 
-    
-    memwb_reg.rd = exmem_reg.rd;
-    
-    memwb_reg.Memto_Reg = exmem_reg.Memto_Reg;
-    memwb_reg.Reg_Write = exmem_reg.Reg_Write;
-    memwb_reg.instr = exmem_reg.instr;
-    memwb_reg.instr_addr = exmem_reg.instr_addr;
-    memwb_reg.instr_addr_imm = exmem_reg.instr_addr_imm;
-    memwb_reg.Read_Address = exmem_reg.Read_Address;
+  if (exmem_reg.Mem_Write) {
+      switch (exmem_reg.funct3) {
+          case 0x0: // sb
+              store(memory_p, exmem_reg.Read_Address, LENGTH_BYTE, exmem_reg.Write_Address & 0xFF);
+              break;
+          case 0x1: // sh
+              store(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD, exmem_reg.Write_Address & 0xFFFF);
+              break;
+          case 0x2: // sw
+              store(memory_p, exmem_reg.Read_Address, LENGTH_WORD, exmem_reg.Write_Address);
+              break;
+          default:
+              break;
+      }
+  }
 
-    //Create pcsrc wire
-    pwires_p->pcsrc = exmem_reg.Branch & exmem_reg.zero;
+  memwb_reg.rd = exmem_reg.rd;
+  
+  memwb_reg.Memto_Reg = exmem_reg.Memto_Reg;
+  memwb_reg.Reg_Write = exmem_reg.Reg_Write;
+  memwb_reg.instr = exmem_reg.instr;
+  memwb_reg.instr_addr = exmem_reg.instr_addr;
+  memwb_reg.instr_addr_imm = exmem_reg.instr_addr_imm;
+  memwb_reg.Read_Address = exmem_reg.Read_Address;
 
-    // Return pc_src1 to IF MUX
-    pwires_p->pc_src1 = memwb_reg.instr_addr_imm;    
+  //Create pcsrc wire
+  pwires_p->pcsrc = exmem_reg.Branch & exmem_reg.zero;
+
+  // Return pc_src1 to IF MUX
+  pwires_p->pc_src1 = memwb_reg.instr_addr_imm;    
 
   #ifdef DEBUG_CYCLE
   printf("[MEM]: Instruction [%08x]@[%08x]: ", exmem_reg.instr.bits, exmem_reg.instr_addr);
@@ -280,6 +303,7 @@ void stage_writeback(memwb_reg_t memwb_reg, pipeline_wires_t* pwires_p, regfile_
         }
     }
 
+  pwires_p->Write_Data = memwb_reg.Write_Data;
   pwires_p->Reg_Write = memwb_reg.Reg_Write;
   pwires_p->pc_src0 = regfile_p->PC+4;
 
@@ -308,6 +332,8 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
   pregs_p->ifid_preg.inp  = stage_fetch     (pwires_p, regfile_p, memory_p);
   
   pregs_p->idex_preg.inp  = stage_decode    (pregs_p->ifid_preg.out, pwires_p, regfile_p);
+
+  gen_forward(pregs_p, pwires_p);
 
   pregs_p->exmem_preg.inp = stage_execute   (pregs_p->idex_preg.out, pwires_p);
 

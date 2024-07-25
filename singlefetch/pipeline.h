@@ -36,8 +36,6 @@ typedef struct
 {
   Instruction instr;
   uint32_t    instr_addr;
-  uint8_t rs1;
-  uint8_t rs2;
   uint32_t rs1_val;
   uint32_t rs2_val;
   uint32_t imm;
@@ -47,6 +45,8 @@ typedef struct
   uint32_t ALU_in_1;
   uint32_t ALU_in_2;
   uint32_t alu_control;
+  uint8_t rs1;
+  uint8_t rs2;
   uint8_t ALUOp;
   bool ALUSrc;
   bool Branch;
@@ -61,12 +61,12 @@ typedef struct
   Instruction instr;
   uint32_t    instr_addr;
   uint32_t    instr_addr_imm;
-  bool zero;
   uint32_t Read_Address;
   uint32_t Write_Address;
-  uint8_t rd;
   uint32_t funct3;
   uint32_t contents;
+  uint8_t rd;
+  bool zero;
   bool Branch;
   bool Mem_Read;
   bool Mem_Write;
@@ -132,12 +132,14 @@ typedef struct
   bool      pcsrc;
   uint32_t  pc_src0;
   uint32_t  pc_src1;
-  bool Reg_Write;
-  uint32_t forwardA;
-  uint32_t forwardB;
   /**
    * Add other fields here
    */
+  bool Reg_Write;
+  uint32_t forwardA;
+  uint32_t forwardB;
+  uint32_t Write_Data;
+  uint32_t Read_Address;
 }pipeline_wires_t;
 
 
