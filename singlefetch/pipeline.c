@@ -190,6 +190,8 @@ if (idex_reg.Branch) {
   exmem_reg.Reg_Write = idex_reg.Reg_Write;
   exmem_reg.Branch = idex_reg.Branch;
 
+  pwires_p->Read_Address = exmem_reg.Read_Address;
+
   #ifdef DEBUG_CYCLE
   printf("[EX ]: Instruction [%08x]@[%08x]: ", idex_reg.instr.bits, idex_reg.instr_addr);
   decode_instruction(idex_reg.instr.bits);
@@ -214,8 +216,8 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
    * YOUR CODE HERE
    */
 
-  pwires_p->Read_Address = exmem_reg.Read_Address;
-
+  pwires_p->Write_Data = exmem_reg.Read_Address;
+  
   if (exmem_reg.Mem_Read) {
       switch (exmem_reg.funct3) {
           case 0x0: // lb
@@ -303,7 +305,6 @@ void stage_writeback(memwb_reg_t memwb_reg, pipeline_wires_t* pwires_p, regfile_
         }
     }
 
-  pwires_p->Write_Data = memwb_reg.Write_Data;
   pwires_p->Reg_Write = memwb_reg.Reg_Write;
   pwires_p->pc_src0 = regfile_p->PC+4;
 
