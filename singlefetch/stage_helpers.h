@@ -311,22 +311,22 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 
   if(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0)){
     if(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1){
-      printf("[FWD]: Resolving EX hazard on rs1: x%ld\n", pregs_p->idex_preg.out.rs1);
+      printf("[FWD]: Resolving EX hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1);
       pwires_p->forwardA = 0x2;
     }
     if(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2){
-      printf("[FWD]: Resolving EX hazard on rs2: x%ld\n", pregs_p->idex_preg.out.rs2);
+      printf("[FWD]: Resolving EX hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
       pwires_p->forwardB = 0x2;
     }
   }
   if(pregs_p->memwb_preg.out.Reg_Write && (pregs_p->memwb_preg.out.rd != 0)){
     if(!(pregs_p->exmem_preg.out.Reg_Write && !(pregs_p->exmem_preg.out.rd != 0))){
       if(!(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1) && (pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs1)){
-        printf("[FWD]: Resolving MEM hazard on rs1: x%ld\n", pregs_p->idex_preg.out.rs1);
+        printf("[FWD]: Resolving MEM hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1);
         pwires_p->forwardA = 0x1;
       }
       if(!(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2) && (pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs2)){
-        printf("[FWD]: Resolving MEM hazard on rs2: x%ld\n", pregs_p->idex_preg.out.rs2);
+        printf("[FWD]: Resolving MEM hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
         pwires_p->forwardB = 0x1;
       }
     }
@@ -344,6 +344,120 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
   /**
    * YOUR CODE HERE
    */
+  bool load_use_hazard = false;
+  bool control_hazard = false;
+  bool has_branch_instr = false;
+
+  if (pregs_p->exmem_preg.out.rd != 0 &&
+    ((pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1) || 
+    (pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2))) {
+      load_use_hazard = true;
+      // Stall
+      pregs_p->idex_preg.inp.ALUOp = 0;
+      pregs_p->idex_preg.inp.ALUSrc = 0;
+      pregs_p->idex_preg.inp.Branch = 0;
+      pregs_p->idex_preg.inp.Mem_Read = 0;
+      pregs_p->idex_preg.inp.Mem_Write = 0;
+      pregs_p->idex_preg.inp.Memto_Reg = 0;
+      pregs_p->idex_preg.inp.Reg_Write = 0;
+      // Stop PC and IF/ID register update
+      pwires_p->PC_haz = 0;
+      pwires_p->ifid_haz = 0;
+      pwires_p->control_mux_haz = 0;
+
+      printf("[HZD]: Stalling and rewriting PC: 0x%08x\n", pregs_p->ifid_preg.inp.instr_addr);
+    }
+
+  // Find branch instr
+  switch (pregs_p->ifid_preg.out.instr.opcode) {
+    case 0x63: // SB-types
+    case 0x6F: // jal
+    case 0x67: // jalr
+      has_branch_instr = true;
+    default:
+      has_branch_instr = false;
+  }
+
+  // Control Hazard
+  if (has_branch_instr) {
+    // For 1-cycle stall
+    if (((pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs1) || 
+      (pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs2)) &&
+      (pregs_p->idex_preg.out.Mem_Read == 0)) {
+        printf("[CPL]: Pipeline Flushed\n");
+        control_hazard = true;
+      }
+    // For 2-cycle stall
+    if (((pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs1) || 
+      (pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs2)) &&
+      (pregs_p->idex_preg.out.Mem_Read == 1)) {
+        printf("[CPL]: Pipeline Flushed\n");
+        control_hazard = true;
+      }
+
+    if (control_hazard) {
+      switch (pregs_p->ifid_preg.out.instr.opcode) {
+        case 0x63:
+          pregs_p->ifid_preg.inp.instr.rtype.opcode = 0x13;
+          pregs_p->ifid_preg.inp.instr.rtype.rd = 0;
+          pregs_p->ifid_preg.inp.instr.rtype.funct3 = 0;
+          pregs_p->ifid_preg.inp.instr.rtype.rs1 = 0;
+          pregs_p->ifid_preg.inp.instr.rtype.rs2 = 0;
+          pregs_p->ifid_preg.inp.instr.rtype.funct7 = 0;
+
+          pregs_p->idex_preg.inp.instr.rtype.opcode = 0x13;
+          pregs_p->idex_preg.inp.instr.rtype.rd = 0;
+          pregs_p->idex_preg.inp.instr.rtype.funct3 = 0;
+          pregs_p->idex_preg.inp.instr.rtype.rs1 = 0;
+          pregs_p->idex_preg.inp.instr.rtype.rs2 = 0;
+          pregs_p->idex_preg.inp.instr.rtype.funct7 = 0;
+
+          pregs_p->exmem_preg.inp.instr.rtype.opcode = 0x13;
+          pregs_p->exmem_preg.inp.instr.rtype.rd = 0;
+          pregs_p->exmem_preg.inp.instr.rtype.funct3 = 0;
+          pregs_p->exmem_preg.inp.instr.rtype.rs1 = 0;
+          pregs_p->exmem_preg.inp.instr.rtype.rs2 = 0;
+          pregs_p->exmem_preg.inp.instr.rtype.funct7 = 0;
+          break;
+        case 0x6F:
+        case 0x67:
+          pregs_p->ifid_preg.inp.instr.ujtype.opcode = 0x13;
+          pregs_p->ifid_preg.inp.instr.ujtype.rd = 0;
+          pregs_p->ifid_preg.inp.instr.ujtype.imm = 0;
+
+          pregs_p->idex_preg.inp.instr.ujtype.opcode = 0x13;
+          pregs_p->idex_preg.inp.instr.ujtype.rd = 0;
+          pregs_p->idex_preg.inp.instr.ujtype.imm = 0;
+
+          pregs_p->exmem_preg.inp.instr.ujtype.opcode = 0x13;
+          pregs_p->exmem_preg.inp.instr.ujtype.rd = 0;
+          pregs_p->exmem_preg.inp.instr.ujtype.imm = 0;
+          break;
+        default:
+          break;
+      }
+      // Clear control signals for the flushed stages
+      pregs_p->idex_preg.inp.ALUOp = 0;
+      pregs_p->idex_preg.inp.ALUSrc = 0;
+      pregs_p->idex_preg.inp.Branch = 0;
+      pregs_p->idex_preg.inp.Mem_Read = 0;
+      pregs_p->idex_preg.inp.Mem_Write = 0;
+      pregs_p->idex_preg.inp.Memto_Reg = 0;
+      pregs_p->idex_preg.inp.Reg_Write = 0;
+
+      pregs_p->exmem_preg.inp.Branch = 0;
+      pregs_p->exmem_preg.inp.Mem_Read = 0;
+      pregs_p->exmem_preg.inp.Mem_Write = 0;
+      pregs_p->exmem_preg.inp.Memto_Reg = 0;
+      pregs_p->exmem_preg.inp.Reg_Write = 0;
+    }
+  }
+  // If no hazard
+  if (!load_use_hazard && !control_hazard) {
+    pwires_p->PC_haz = 0;
+    pwires_p->ifid_haz = 0;
+    pwires_p->control_mux_haz = 0;
+  }
 }
 
 
