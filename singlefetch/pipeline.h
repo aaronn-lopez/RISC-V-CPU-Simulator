@@ -140,6 +140,9 @@ typedef struct
   uint32_t forwardB;
   uint32_t Write_Data;
   uint32_t Read_Address;
+  uint32_t PC_haz;
+  uint32_t ifid_haz;
+  uint32_t control_mux_haz;
 }pipeline_wires_t;
 
 

@@ -344,6 +344,7 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
   /**
    * YOUR CODE HERE
    */
+  /*
   bool load_use_hazard = false;
   bool control_hazard = false;
   bool has_branch_instr = false;
@@ -360,12 +361,9 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
       pregs_p->idex_preg.inp.Mem_Write = 0;
       pregs_p->idex_preg.inp.Memto_Reg = 0;
       pregs_p->idex_preg.inp.Reg_Write = 0;
-      // Stop PC and IF/ID register update
-      /*
       pwires_p->PC_haz = 0;
       pwires_p->ifid_haz = 0;
       pwires_p->control_mux_haz = 0;
-      */
 
       printf("[HZD]: Stalling and rewriting PC: 0x%08x\n", pregs_p->ifid_preg.inp.instr_addr);
     }
@@ -456,12 +454,11 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
   }
   // If no hazard
   if (!load_use_hazard && !control_hazard) {
-    /*
     pwires_p->PC_haz = 0;
     pwires_p->ifid_haz = 0;
     pwires_p->control_mux_haz = 0;
-    */
   }
+  */
 }
 
 

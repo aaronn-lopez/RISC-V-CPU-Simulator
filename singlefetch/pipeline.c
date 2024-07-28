@@ -160,6 +160,9 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
   if (idex_reg.ALUOp == 0x1 && exmem_reg.Read_Address == 0) {
       exmem_reg.zero = 1;
   }
+  else if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address != 0) && (idex_reg.funct3 == 1)) {
+    exmem_reg.zero = 1;
+  }
   else if (idex_reg.ALUOp == 0x5) { // jal
 	exmem_reg.zero = 1;
     }
@@ -342,7 +345,7 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
 
                             stage_writeback (pregs_p->memwb_preg.out, pwires_p, regfile_p);
 
-  #ifdef PRINT_STATS // only runs for ms2, 3, 4
+  #ifdef DEBUG_CYCLE // only runs for ms2, 3, 4
   detect_hazard(pregs_p, pwires_p, regfile_p);
 
   //Flush Pipeline if Branch is taken
