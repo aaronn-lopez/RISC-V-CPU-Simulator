@@ -342,6 +342,83 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
 
                             stage_writeback (pregs_p->memwb_preg.out, pwires_p, regfile_p);
 
+  #ifdef PRINT_STATS // only runs for ms2, 3, 4
+  detect_hazard(pregs_p, pwires_p, regfile_p);
+
+  //Flush Pipeline if Branch is taken
+  if (pwires_p->pcsrc == 1){
+    branch_counter++;
+    printf("[CPL]: Pipeline Flushed\n");
+    // Prevent update of PC and IF/ID register
+    pwires_p->PC_haz = 0;            // Disable PC update
+    pwires_p->ifid_haz = 0;          // Disable IF/ID register update
+    pwires_p->control_mux_haz = 0; // Set control signals to zero (nop)
+
+
+    //flush ifid_preg
+    pregs_p->ifid_preg.inp.instr.ujtype.opcode = 0x13;
+    pregs_p->ifid_preg.inp.instr.ujtype.rd = 0;
+    pregs_p->ifid_preg.inp.instr.ujtype.imm = 0;
+    pregs_p->ifid_preg.out.instr.ujtype.opcode = 0x13;
+    pregs_p->ifid_preg.out.instr.ujtype.rd = 0;
+    pregs_p->ifid_preg.out.instr.ujtype.imm = 0;
+    //flush idex_preg
+    pregs_p->idex_preg.inp.instr.rtype.opcode = 0x13;
+    pregs_p->idex_preg.inp.instr.rtype.rd = 0;
+    pregs_p->idex_preg.inp.instr.rtype.funct3 = 0;
+    pregs_p->idex_preg.inp.instr.rtype.rs1 = 0;
+    pregs_p->idex_preg.inp.instr.rtype.rs2 = 0;
+    pregs_p->idex_preg.inp.instr.rtype.funct7 = 0;
+    pregs_p->idex_preg.out.instr.rtype.opcode = 0x13;
+    pregs_p->idex_preg.out.instr.rtype.rd = 0;
+    pregs_p->idex_preg.out.instr.rtype.funct3 = 0;
+    pregs_p->idex_preg.out.instr.rtype.rs1 = 0;
+    pregs_p->idex_preg.out.instr.rtype.rs2 = 0;
+    pregs_p->idex_preg.out.instr.rtype.funct7 = 0;
+
+    //flush exmem_preg
+    pregs_p->exmem_preg.inp.instr.rtype.opcode = 0x13;
+    pregs_p->exmem_preg.inp.instr.rtype.rd = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.funct3 = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.rs1 = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.rs2 = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.funct7 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.opcode = 0x13;
+    pregs_p->exmem_preg.out.instr.rtype.rd = 0;
+    pregs_p->exmem_preg.out.instr.rtype.funct3 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.rs1 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.rs2 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.funct7 = 0;
+
+    // Clear control signals for the flushed stages
+    pregs_p->idex_preg.inp.ALUOp = 0;
+    pregs_p->idex_preg.inp.ALUSrc = 0;
+    pregs_p->idex_preg.inp.Branch = 0;
+    pregs_p->idex_preg.inp.Mem_Read = 0;
+    pregs_p->idex_preg.inp.Mem_Write = 0;
+    pregs_p->idex_preg.inp.Memto_Reg = 0;
+    pregs_p->idex_preg.inp.Reg_Write = 0;
+    pregs_p->idex_preg.out.ALUOp = 0;
+    pregs_p->idex_preg.out.ALUSrc = 0;
+    pregs_p->idex_preg.out.Branch = 0;
+    pregs_p->idex_preg.out.Mem_Read = 0;
+    pregs_p->idex_preg.out.Mem_Write = 0;
+    pregs_p->idex_preg.out.Memto_Reg = 0;
+    pregs_p->idex_preg.out.Reg_Write = 0;
+
+    pregs_p->exmem_preg.inp.Branch = 0;
+    pregs_p->exmem_preg.inp.Mem_Read = 0;
+    pregs_p->exmem_preg.inp.Mem_Write = 0;
+    pregs_p->exmem_preg.inp.Memto_Reg = 0;
+    pregs_p->exmem_preg.inp.Reg_Write = 0;
+    pregs_p->exmem_preg.out.Branch = 0;
+    pregs_p->exmem_preg.out.Mem_Read = 0;
+    pregs_p->exmem_preg.out.Mem_Write = 0;
+    pregs_p->exmem_preg.out.Memto_Reg = 0;
+    pregs_p->exmem_preg.out.Reg_Write = 0;
+  }
+  #endif
+	
   // update all the output registers for the next cycle from the input registers in the current cycle
   pregs_p->ifid_preg.out  = pregs_p->ifid_preg.inp;
   pregs_p->idex_preg.out  = pregs_p->idex_preg.inp;
