@@ -48,6 +48,7 @@ typedef struct
   uint8_t rs1;
   uint8_t rs2;
   uint8_t ALUOp;
+  uint32_t Write_Address;
   bool ALUSrc;
   bool Branch;
   bool Mem_Read;
@@ -85,6 +86,7 @@ typedef struct
   uint8_t rd;
   bool Memto_Reg;
   bool Reg_Write;
+  bool Mem_Read;
 }memwb_reg_t;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,9 +142,9 @@ typedef struct
   uint32_t forwardB;
   uint32_t Write_Data;
   uint32_t Read_Address;
-  uint32_t PC_haz;
-  uint32_t ifid_haz;
-  uint32_t control_mux_haz;
+  bool PC_haz;
+  bool ifid_haz;
+  bool control_mux_haz;
 }pipeline_wires_t;
 
 

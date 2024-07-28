@@ -157,10 +157,10 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
   idex_reg.alu_control = gen_alu_control(idex_reg);
   exmem_reg.Read_Address = execute_alu(idex_reg.ALU_in_1, idex_reg.ALU_in_2, idex_reg.alu_control);
     
-  if (idex_reg.ALUOp == 0x1 && exmem_reg.Read_Address == 0) {
+  if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address == 0) && (idex_reg.funct3 == 0x0)) { //beq
       exmem_reg.zero = 1;
   }
-  else if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address != 0) && (idex_reg.funct3 == 1)) {
+  else if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address != 0) && (idex_reg.funct3 == 0x1)) { //bne
     exmem_reg.zero = 1;
   }
   else if (idex_reg.ALUOp == 0x5) { // jal
@@ -222,37 +222,39 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
   pwires_p->Write_Data = exmem_reg.Read_Address;
   
   if (exmem_reg.Mem_Read) {
-      switch (exmem_reg.funct3) {
-          case 0x0: // lb
-              exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_BYTE), 8);
-              break;
-          case 0x1: // lh
-              exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD), 16);
-              break;
-          case 0x2: // lw
-              exmem_reg.contents = load(memory_p, exmem_reg.Read_Address, LENGTH_WORD);
-              break;
-          default:
-              exmem_reg.contents = 0; // invalid funct3
-              break;
-      }
+    pwires_p->Write_Data = memwb_reg.Read_Data; //fixes multiply test case but tiny still not working
+    switch (exmem_reg.funct3) {
+        case 0x0: // lb
+            exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_BYTE), 8);
+            break;
+        case 0x1: // lh
+            exmem_reg.contents = sign_extend_number(load(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD), 16);
+            break;
+        case 0x2: // lw
+            exmem_reg.contents = load(memory_p, exmem_reg.Read_Address, LENGTH_WORD);
+            break;
+        default:
+            exmem_reg.contents = 0; // invalid funct3
+            break;
+    }
 
-      memwb_reg.Read_Data = exmem_reg.contents;
+    memwb_reg.Read_Data = exmem_reg.contents;
   }
 
   if (exmem_reg.Mem_Write) {
-      switch (exmem_reg.funct3) {
-          case 0x0: // sb
-              store(memory_p, exmem_reg.Read_Address, LENGTH_BYTE, exmem_reg.Write_Address & 0xFF);
-              break;
-          case 0x1: // sh
-              store(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD, exmem_reg.Write_Address & 0xFFFF);
-              break;
-          case 0x2: // sw
-              store(memory_p, exmem_reg.Read_Address, LENGTH_WORD, exmem_reg.Write_Address);
-              break;
-          default:
-              break;
+    pwires_p->Write_Data = exmem_reg.Read_Address;
+    switch (exmem_reg.funct3) {
+        case 0x0: // sb
+            store(memory_p, exmem_reg.Read_Address, LENGTH_BYTE, exmem_reg.Write_Address & 0xFF);
+            break;
+        case 0x1: // sh
+            store(memory_p, exmem_reg.Read_Address, LENGTH_HALF_WORD, exmem_reg.Write_Address & 0xFFFF);
+            break;
+        case 0x2: // sw
+            store(memory_p, exmem_reg.Read_Address, LENGTH_WORD, exmem_reg.Write_Address);
+            break;
+        default:
+            break;
       }
   }
 
@@ -421,7 +423,7 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
     pregs_p->exmem_preg.out.Reg_Write = 0;
   }
   #endif
-	
+
   // update all the output registers for the next cycle from the input registers in the current cycle
   pregs_p->ifid_preg.out  = pregs_p->ifid_preg.inp;
   pregs_p->idex_preg.out  = pregs_p->idex_preg.inp;
@@ -460,4 +462,3 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
     *(ecall_exit) = true;
   }
 }
-
