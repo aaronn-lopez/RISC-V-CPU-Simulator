@@ -51,6 +51,8 @@ ifid_reg_t stage_fetch(pipeline_wires_t* pwires_p, regfile_t* regfile_p, Byte* m
   #endif
   ifid_reg.instr.bits = instruction_bits;
   ifid_reg.instr_addr = regfile_p->PC;
+  ifid_reg.rs1 = (instruction_bits >> 15) & ((1U << 5) - 1);
+  ifid_reg.rs2 = (instruction_bits >> 20) & ((1U << 5)  -1);
   return ifid_reg;
 }
 
@@ -61,9 +63,6 @@ ifid_reg_t stage_fetch(pipeline_wires_t* pwires_p, regfile_t* regfile_p, Byte* m
 idex_reg_t stage_decode(ifid_reg_t ifid_reg, pipeline_wires_t* pwires_p, regfile_t* regfile_p)
 {
   idex_reg_t idex_reg = {0};
-  /**
-   * YOUR CODE HERE
-   */
 
   // updating idex_reg
   idex_reg = gen_control(ifid_reg.instr);
@@ -71,6 +70,7 @@ idex_reg_t stage_decode(ifid_reg_t ifid_reg, pipeline_wires_t* pwires_p, regfile
   idex_reg.instr.bits = ifid_reg.instr.bits;
   idex_reg.instr_addr = ifid_reg.instr_addr;
 
+  //some may be redundant and useless code
   switch((idex_reg.instr.bits) & ((1U << 7) - 1)) {
   case 0x33:
   case 0x23:
@@ -113,9 +113,6 @@ idex_reg_t stage_decode(ifid_reg_t ifid_reg, pipeline_wires_t* pwires_p, regfile
 exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
 {
   exmem_reg_t exmem_reg = {0};
-  /**
-   * YOUR CODE HERE
-   */
 
   if (pwires_p->forwardA || pwires_p->forwardB) {
     exmem_reg.Write_Address = idex_reg.Write_Address;
@@ -209,10 +206,7 @@ memwb_reg_t type).
 memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* memory_p, Cache* cache_p)
 {
   memwb_reg_t memwb_reg = {0};
-  /**
-   * YOUR CODE HERE
-   */
-  
+
   if (exmem_reg.Mem_Read) {
     switch (exmem_reg.funct3) {
         case 0x0: // lb
@@ -283,10 +277,6 @@ It is working on writing the results to the destination register (rd).
 */
 void stage_writeback(memwb_reg_t memwb_reg, pipeline_wires_t* pwires_p, regfile_t* regfile_p)
 {
-  /**
-  * YOUR CODE HERE
-  */
-
   // Only write back if Reg_Write is true
   if (memwb_reg.Reg_Write) {
         // Determine whether to write from Read_Data or Read_Address
@@ -327,6 +317,8 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
 
   /* Output               |    Stage      |       Inputs  */
   pregs_p->ifid_preg.inp  = stage_fetch     (pwires_p, regfile_p, memory_p);
+
+  detect_hazard(pregs_p, pwires_p, regfile_p);
   
   pregs_p->idex_preg.inp  = stage_decode    (pregs_p->ifid_preg.out, pwires_p, regfile_p);
 
@@ -339,80 +331,7 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
                             stage_writeback (pregs_p->memwb_preg.out, pwires_p, regfile_p);
 
   #ifdef PRINT_STATS // only runs for ms2, 3, 4
-  detect_hazard(pregs_p, pwires_p, regfile_p);
-
-  //Flush Pipeline if Branch is taken
-  if (pwires_p->pcsrc == 1){
-    branch_counter++;
-    printf("[CPL]: Pipeline Flushed\n");
-    // Prevent update of PC and IF/ID register
-    pwires_p->PC_haz = 0;            // Disable PC update
-    pwires_p->ifid_haz = 0;          // Disable IF/ID register update
-    pwires_p->control_mux_haz = 0; // Set control signals to zero (nop)
-
-    //flush ifid_preg
-    pregs_p->ifid_preg.inp.instr.ujtype.opcode = 0x13;
-    pregs_p->ifid_preg.inp.instr.ujtype.rd = 0;
-    pregs_p->ifid_preg.inp.instr.ujtype.imm = 0;
-    pregs_p->ifid_preg.out.instr.ujtype.opcode = 0x13;
-    pregs_p->ifid_preg.out.instr.ujtype.rd = 0;
-    pregs_p->ifid_preg.out.instr.ujtype.imm = 0;
-
-    //flush idex_preg
-    pregs_p->idex_preg.inp.instr.rtype.opcode = 0x13;
-    pregs_p->idex_preg.inp.instr.rtype.rd = 0;
-    pregs_p->idex_preg.inp.instr.rtype.funct3 = 0;
-    pregs_p->idex_preg.inp.instr.rtype.rs1 = 0;
-    pregs_p->idex_preg.inp.instr.rtype.rs2 = 0;
-    pregs_p->idex_preg.inp.instr.rtype.funct7 = 0;
-    pregs_p->idex_preg.out.instr.rtype.opcode = 0x13;
-    pregs_p->idex_preg.out.instr.rtype.rd = 0;
-    pregs_p->idex_preg.out.instr.rtype.funct3 = 0;
-    pregs_p->idex_preg.out.instr.rtype.rs1 = 0;
-    pregs_p->idex_preg.out.instr.rtype.rs2 = 0;
-    pregs_p->idex_preg.out.instr.rtype.funct7 = 0;
-
-    //flush exmem_preg
-    pregs_p->exmem_preg.inp.instr.rtype.opcode = 0x13;
-    pregs_p->exmem_preg.inp.instr.rtype.rd = 0;
-    pregs_p->exmem_preg.inp.instr.rtype.funct3 = 0;
-    pregs_p->exmem_preg.inp.instr.rtype.rs1 = 0;
-    pregs_p->exmem_preg.inp.instr.rtype.rs2 = 0;
-    pregs_p->exmem_preg.inp.instr.rtype.funct7 = 0;
-    pregs_p->exmem_preg.out.instr.rtype.opcode = 0x13;
-    pregs_p->exmem_preg.out.instr.rtype.rd = 0;
-    pregs_p->exmem_preg.out.instr.rtype.funct3 = 0;
-    pregs_p->exmem_preg.out.instr.rtype.rs1 = 0;
-    pregs_p->exmem_preg.out.instr.rtype.rs2 = 0;
-    pregs_p->exmem_preg.out.instr.rtype.funct7 = 0;
-
-    // Clear control signals for the flushed stages
-    pregs_p->idex_preg.inp.ALUOp = 0;
-    pregs_p->idex_preg.inp.ALUSrc = 0;
-    pregs_p->idex_preg.inp.Branch = 0;
-    pregs_p->idex_preg.inp.Mem_Read = 0;
-    pregs_p->idex_preg.inp.Mem_Write = 0;
-    pregs_p->idex_preg.inp.Memto_Reg = 0;
-    pregs_p->idex_preg.inp.Reg_Write = 0;
-    pregs_p->idex_preg.out.ALUOp = 0;
-    pregs_p->idex_preg.out.ALUSrc = 0;
-    pregs_p->idex_preg.out.Branch = 0;
-    pregs_p->idex_preg.out.Mem_Read = 0;
-    pregs_p->idex_preg.out.Mem_Write = 0;
-    pregs_p->idex_preg.out.Memto_Reg = 0;
-    pregs_p->idex_preg.out.Reg_Write = 0;
-
-    pregs_p->exmem_preg.inp.Branch = 0;
-    pregs_p->exmem_preg.inp.Mem_Read = 0;
-    pregs_p->exmem_preg.inp.Mem_Write = 0;
-    pregs_p->exmem_preg.inp.Memto_Reg = 0;
-    pregs_p->exmem_preg.inp.Reg_Write = 0;
-    pregs_p->exmem_preg.out.Branch = 0;
-    pregs_p->exmem_preg.out.Mem_Read = 0;
-    pregs_p->exmem_preg.out.Mem_Write = 0;
-    pregs_p->exmem_preg.out.Memto_Reg = 0;
-    pregs_p->exmem_preg.out.Reg_Write = 0;
-  }
+  branch_counter = flush_pipeline(pregs_p, pwires_p, branch_counter);
   #endif
 
   // update all the output registers for the next cycle from the input registers in the current cycle

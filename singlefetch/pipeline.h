@@ -27,9 +27,8 @@ typedef struct
 {
   Instruction instr;
   uint32_t    instr_addr;
-  /**
-   * Add other fields here
-   */
+  uint8_t rs1;
+  uint8_t rs2; 
 }ifid_reg_t;
 
 typedef struct
@@ -134,9 +133,6 @@ typedef struct
   bool      pcsrc;
   uint32_t  pc_src0;
   uint32_t  pc_src1;
-  /**
-   * Add other fields here
-   */
   uint32_t forwardA;
   uint32_t forwardB;
   bool PC_haz;

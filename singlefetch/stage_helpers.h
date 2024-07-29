@@ -14,9 +14,6 @@
 uint32_t gen_alu_control(idex_reg_t idex_reg)
 {
   uint32_t alu_control = 0;
-  /**
-   * YOUR CODE HERE
-   */
   switch (idex_reg.ALUOp) {
     case 0x0: // lw or sw
       alu_control = 0x2; // add
@@ -170,9 +167,6 @@ uint32_t execute_alu(uint32_t alu_inp1, uint32_t alu_inp2, uint32_t alu_control)
 uint32_t gen_imm(Instruction instruction)
 {
   int imm_val = 0;
-  /**
-   * YOUR CODE HERE
-   */
   switch(instruction.opcode) {
         case 0x03: //L-type
 	      case 0x13: //I-type
@@ -297,17 +291,11 @@ bool gen_branch(uint32_t alu1, uint32_t alu2, uint32_t funct3)
 /// PIPELINE FEATURES ///
 
 /**
- * Task   : Sets the pipeline wires for the forwarding unit's control signals
- *           based on the pipeline register values.
  * input  : pipeline_regs_t*, pipeline_wires_t*
  * output : None
 */
 void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 {
-  /**
-   * YOUR CODE HERE
-   */
-
   //By defualt, set both to 0. If there is no need for forwarding, A and B will exit function with value of 0
   pwires_p->forwardA = 0x0;
   pwires_p->forwardB = 0x0;
@@ -379,91 +367,127 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 }
 
 /**
- * Task   : Sets the pipeline wires for the hazard unit's control signals
- *           based on the pipeline register values.
  * input  : pipeline_regs_t*, pipeline_wires_t*
  * output : None
 */
 void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile_t* regfile_p)
 {
-  /**
-   * YOUR CODE HERE
-   */
-  bool load_use_hazard = false;
-  bool control_hazard = false;
-  bool has_branch_instr = false;
+  if (pregs_p->idex_preg.out.Mem_Read &&
+    ((pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.rs1) || 
+    (pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.rs2))) {
+    // Stall
+    pregs_p->idex_preg.inp.ALUOp = 0;
+    pregs_p->idex_preg.inp.ALUSrc = 0;
+    pregs_p->idex_preg.inp.Branch = 0;
+    pregs_p->idex_preg.inp.Mem_Read = 0;
+    pregs_p->idex_preg.inp.Mem_Write = 0;
+    pregs_p->idex_preg.inp.Memto_Reg = 0;
+    pregs_p->idex_preg.inp.Reg_Write = 0;
 
-if (pregs_p->exmem_preg.out.Mem_Read && pregs_p->exmem_preg.out.rd != 0 &&
-    ((pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1) || 
-    (pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2))) {
-      load_use_hazard = true;
-      // Stall
-      pregs_p->idex_preg.inp.ALUOp = 0;
-      pregs_p->idex_preg.inp.ALUSrc = 0;
-      pregs_p->idex_preg.inp.Branch = 0;
-      pregs_p->idex_preg.inp.Mem_Read = 0;
-      pregs_p->idex_preg.inp.Mem_Write = 0;
-      pregs_p->idex_preg.inp.Memto_Reg = 0;
-      pregs_p->idex_preg.inp.Reg_Write = 0;
-      // Stop PC and IF/ID register update
-      
-      pwires_p->PC_haz = 0;
-      pwires_p->ifid_haz = 0;
-      pwires_p->control_mux_haz = 0;
+    // Stop PC and IF/ID register update
+    pwires_p->PC_haz = 0;
+    pwires_p->ifid_haz = 0;
+    pwires_p->control_mux_haz = 0;
 
-      printf("[HZD]: Stalling and rewriting PC: 0x%08x\n", pregs_p->ifid_preg.inp.instr_addr);
-    }
-
-  // Find branch instr
-  switch (pregs_p->ifid_preg.out.instr.opcode) {
-    case 0x63: // SB-types
-    case 0x6F: // jal
-    case 0x67: // jalr
-      has_branch_instr = true;
-    default:
-      has_branch_instr = false;
+    printf("[HZD]: Stalling and rewriting PC: 0x%08x\n", pregs_p->ifid_preg.inp.instr_addr);
   }
-
-  // Control Hazard
-  if (has_branch_instr) {
-    // For 1-cycle stall
-    /*if (((pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs1) || 
-      (pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs2)) &&
-      (pregs_p->idex_preg.out.Mem_Read == 0)) {
-        printf("[CPL]: Pipeline Flushed\n");
-        control_hazard = true;
-      }
-    // For 2-cycle stall
-    if (((pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs1) || 
-      (pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.instr.rtype.rs2)) &&
-      (pregs_p->idex_preg.out.Mem_Read == 1)) {
-        printf("[CPL]: Pipeline Flushed\n");
-        control_hazard = true;
-      }*/
-
-    if(!pregs_p->exmem_preg.out.Read_Address) {
-	      control_hazard = true;
-    }
-
-    if (control_hazard) {
-      pwires_p->PC_haz = 0;
-      pwires_p->ifid_haz = 0;
-      pwires_p->control_mux_haz = 0;
-    }
-  }
-  // If no hazard
-  if (!load_use_hazard && !control_hazard) {
-    
+  else {
+    //If no hazard
     pwires_p->PC_haz = 1;
     pwires_p->ifid_haz = 1;
     pwires_p->control_mux_haz = 1;
-    
   }
 }
 
+/**
+ * input  : pipeline_regs_t*, pipeline_wires_t*, uint64_t
+ * output : branch_counter update
+*/
+uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, uint64_t branch_counter)
+{
+  //Flush Pipeline if Branch is taken
+  if (pwires_p->pcsrc == 1){
+    printf("[CPL]: Pipeline Flushed\n");
+    // Prevent update of PC and IF/ID register
+    pwires_p->PC_haz = 0;            // Disable PC update
+    pwires_p->ifid_haz = 0;          // Disable IF/ID register update
+    pwires_p->control_mux_haz = 0; // Set control signals to zero (nop)
+
+    //flush ifid_preg
+    pregs_p->ifid_preg.inp.instr.ujtype.opcode = 0x13;
+    pregs_p->ifid_preg.inp.instr.ujtype.rd = 0;
+    pregs_p->ifid_preg.inp.instr.ujtype.imm = 0;
+    pregs_p->ifid_preg.out.instr.ujtype.opcode = 0x13;
+    pregs_p->ifid_preg.out.instr.ujtype.rd = 0;
+    pregs_p->ifid_preg.out.instr.ujtype.imm = 0;
+
+    //flush idex_preg
+    pregs_p->idex_preg.inp.instr.rtype.opcode = 0x13;
+    pregs_p->idex_preg.inp.instr.rtype.rd = 0;
+    pregs_p->idex_preg.inp.instr.rtype.funct3 = 0;
+    pregs_p->idex_preg.inp.instr.rtype.rs1 = 0;
+    pregs_p->idex_preg.inp.instr.rtype.rs2 = 0;
+    pregs_p->idex_preg.inp.instr.rtype.funct7 = 0;
+    pregs_p->idex_preg.out.instr.rtype.opcode = 0x13;
+    pregs_p->idex_preg.out.instr.rtype.rd = 0;
+    pregs_p->idex_preg.out.instr.rtype.funct3 = 0;
+    pregs_p->idex_preg.out.instr.rtype.rs1 = 0;
+    pregs_p->idex_preg.out.instr.rtype.rs2 = 0;
+    pregs_p->idex_preg.out.instr.rtype.funct7 = 0;
+
+    //flush exmem_preg
+    pregs_p->exmem_preg.inp.instr.rtype.opcode = 0x13;
+    pregs_p->exmem_preg.inp.instr.rtype.rd = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.funct3 = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.rs1 = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.rs2 = 0;
+    pregs_p->exmem_preg.inp.instr.rtype.funct7 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.opcode = 0x13;
+    pregs_p->exmem_preg.out.instr.rtype.rd = 0;
+    pregs_p->exmem_preg.out.instr.rtype.funct3 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.rs1 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.rs2 = 0;
+    pregs_p->exmem_preg.out.instr.rtype.funct7 = 0;
+
+    // Clear control signals for the flushed stages
+    pregs_p->idex_preg.inp.ALUOp = 0;
+    pregs_p->idex_preg.inp.ALUSrc = 0;
+    pregs_p->idex_preg.inp.Branch = 0;
+    pregs_p->idex_preg.inp.Mem_Read = 0;
+    pregs_p->idex_preg.inp.Mem_Write = 0;
+    pregs_p->idex_preg.inp.Memto_Reg = 0;
+    pregs_p->idex_preg.inp.Reg_Write = 0;
+    pregs_p->idex_preg.out.ALUOp = 0;
+    pregs_p->idex_preg.out.ALUSrc = 0;
+    pregs_p->idex_preg.out.Branch = 0;
+    pregs_p->idex_preg.out.Mem_Read = 0;
+    pregs_p->idex_preg.out.Mem_Write = 0;
+    pregs_p->idex_preg.out.Memto_Reg = 0;
+    pregs_p->idex_preg.out.Reg_Write = 0;
+
+    pregs_p->exmem_preg.inp.Branch = 0;
+    pregs_p->exmem_preg.inp.Mem_Read = 0;
+    pregs_p->exmem_preg.inp.Mem_Write = 0;
+    pregs_p->exmem_preg.inp.Memto_Reg = 0;
+    pregs_p->exmem_preg.inp.Reg_Write = 0;
+    pregs_p->exmem_preg.out.Branch = 0;
+    pregs_p->exmem_preg.out.Mem_Read = 0;
+    pregs_p->exmem_preg.out.Mem_Write = 0;
+    pregs_p->exmem_preg.out.Memto_Reg = 0;
+    pregs_p->exmem_preg.out.Reg_Write = 0;
+    return branch_counter + 1;
+  }
+  else
+  { 
+    //If no hazard
+    pwires_p->PC_haz = 1;
+    pwires_p->ifid_haz = 1;
+    pwires_p->control_mux_haz = 1;
+    return branch_counter;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
-
 
 /// RESERVED FOR PRINTING REGISTER TRACE AFTER EACH CLOCK CYCLE ///
 void print_register_trace(regfile_t* regfile_p)
