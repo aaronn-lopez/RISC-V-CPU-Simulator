@@ -279,15 +279,18 @@ idex_reg_t gen_control(Instruction instruction)
  * input  : <open to implementation>
  * output : bool
  **/
-bool gen_branch(Instruction instr, regfile_t * regfile_p)
+bool gen_branch(uint32_t alu1, uint32_t alu2, uint32_t funct3)
 {
-  switch (instr.sbtype.funct3) {
-    case 0x0: // beq
-        return regfile_p->R[instr.sbtype.rs1] == regfile_p->R[instr.sbtype.rs2];
-    case 0x1: // bne
-        return regfile_p->R[instr.sbtype.rs1] != regfile_p->R[instr.sbtype.rs2];
-	default:
-  return false;
+  if(alu1 == alu2 && (funct3 == 0x0))
+  {
+    return true;
+  }
+  else if(alu1 != alu2 && (funct3 == 0x1))
+  {
+    return true;
+  }
+  else{
+    return false;
   }
 }
 
@@ -329,6 +332,40 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
         printf("[FWD]: Resolving MEM hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
         pwires_p->forwardB = 0x1;
       }
+    }
+  }
+
+  //MUX for first ALU operand
+  if (pwires_p->forwardA == 0x2) {
+    pregs_p->idex_preg.out.rs1_val = pregs_p->exmem_preg.out.Read_Address;
+  } 
+  else if (pwires_p->forwardA == 0x1) {
+    if (pregs_p->memwb_preg.out.Mem_Read) {
+      pregs_p->idex_preg.out.rs1_val = pregs_p->memwb_preg.out.Read_Data;
+    } 
+    else {
+      pregs_p->idex_preg.out.rs1_val = pregs_p->memwb_preg.out.Read_Address;
+    }
+    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+      pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
+      pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
+    }
+  }
+
+  //MUX for second ALU operand
+  if (pwires_p->forwardB == 0x2) {
+      pregs_p->idex_preg.out.rs2_val = pregs_p->exmem_preg.out.Read_Address;
+  } 
+  else if (pwires_p->forwardB == 0x1) {
+    if (pregs_p->memwb_preg.out.Mem_Read) { //load instruction
+      pregs_p->idex_preg.out.rs2_val = pregs_p->memwb_preg.out.Read_Data;
+    } 
+    else {
+      pregs_p->idex_preg.out.rs2_val = pregs_p->memwb_preg.out.Read_Address;
+    }
+    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+      pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
+      pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
     }
   }
 }

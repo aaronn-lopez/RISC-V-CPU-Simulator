@@ -66,6 +66,7 @@ typedef struct
   uint32_t Write_Address;
   uint32_t funct3;
   uint32_t contents;
+  uint32_t oldcontents;
   uint8_t rd;
   bool zero;
   bool Branch;
@@ -137,11 +138,8 @@ typedef struct
   /**
    * Add other fields here
    */
-  bool Reg_Write;
   uint32_t forwardA;
   uint32_t forwardB;
-  uint32_t Write_Data;
-  uint32_t Read_Address;
   bool PC_haz;
   bool ifid_haz;
   bool control_mux_haz;
