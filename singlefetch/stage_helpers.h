@@ -338,6 +338,10 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
   //MUX for first ALU operand
   if (pwires_p->forwardA == 0x2) {
     pregs_p->idex_preg.out.rs1_val = pregs_p->exmem_preg.out.Read_Address;
+    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+      pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
+      pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
+    }
   } 
   else if (pwires_p->forwardA == 0x1) {
     if (pregs_p->memwb_preg.out.Mem_Read) {
@@ -354,7 +358,11 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 
   //MUX for second ALU operand
   if (pwires_p->forwardB == 0x2) {
-      pregs_p->idex_preg.out.rs2_val = pregs_p->exmem_preg.out.Read_Address;
+    pregs_p->idex_preg.out.rs2_val = pregs_p->exmem_preg.out.Read_Address;
+    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+      pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
+      pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
+    }
   } 
   else if (pwires_p->forwardB == 0x1) {
     if (pregs_p->memwb_preg.out.Mem_Read) { //load instruction

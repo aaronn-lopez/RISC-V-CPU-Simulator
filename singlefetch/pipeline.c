@@ -127,7 +127,7 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
   if (pwires_p->forwardA == 0x0 && idex_reg.ALUOp == 0x5) {
     idex_reg.rs1_val = idex_reg.instr_addr;
   }
-  if (pwires_p->forwardB == 0x0 && idex_reg.ALUSrc == 1) {
+  if (pwires_p->forwardA == 0x0 && idex_reg.ALUSrc == 1) {
     idex_reg.rs2_val = idex_reg.imm;
   }
 
@@ -149,11 +149,11 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
   if(idex_reg.instr.bits == 0x63) { //gen_branch here to ensure forwarded data
     idex_reg.Branch = gen_branch(idex_reg.rs1_val, idex_reg.rs2_val, idex_reg.funct3);
   }
-
+  
 // ALU execution
   idex_reg.alu_control = gen_alu_control(idex_reg);
   exmem_reg.Read_Address = execute_alu(idex_reg.rs1_val, idex_reg.rs2_val, idex_reg.alu_control);
-    
+
   if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address == 0) && (idex_reg.funct3 == 0x0)) { //beq
     exmem_reg.zero = 1;
   }

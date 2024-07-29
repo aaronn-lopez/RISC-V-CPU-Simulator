@@ -66,7 +66,6 @@ typedef struct
   uint32_t Write_Address;
   uint32_t funct3;
   uint32_t contents;
-  uint32_t oldcontents;
   uint8_t rd;
   bool zero;
   bool Branch;
