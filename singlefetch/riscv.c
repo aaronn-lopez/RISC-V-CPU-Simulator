@@ -186,6 +186,7 @@ int main(int argc, char **argv) {
   pipeline_regs_t pipeline_regs = {0};
   pipeline_wires_t pipeline_wires = {0};
   total_cycle_counter = 0;
+  mem_access_counter = 0;
 
   bootstrap(&pipeline_wires, &pipeline_regs, &regfile);
 
@@ -241,11 +242,17 @@ int main(int argc, char **argv) {
     printf("#Branches taken    = %5ld\n", branch_counter);
     printf("#Stalls            = %5ld\n", stall_counter);
     #endif
-    #ifdef DEBUG_CACHE_TRACE
-    printf("Number of cache accesses = %5ld\n", hit_count+miss_count);
-    printf("Number of cache hits     = %5ld\n", hit_count);
-    printf("Number of cache misses   = %5ld\n", miss_count);
+    #ifdef PRINT_CACHE_STATS
+      #if defined(CACHE_ENABLE)
+      printf("#MEM   stalls      = %5ld\n", ((miss_count*MEM_LATENCY) + ((hit_count+miss_count) * (CACHE_HIT_LATENCY-1))));
+      #else
+      printf("#MEM   stalls      = %5ld\n", (mem_access_counter*(MEM_LATENCY-1)));
+      #endif
+      printf("#Cache accesses    = %5ld\n", hit_count+miss_count);
+      printf("#Cache hits        = %5ld\n", hit_count);
+      printf("#Cache misses      = %5ld\n", miss_count);
     #endif
+
   }
 
   // print mem
