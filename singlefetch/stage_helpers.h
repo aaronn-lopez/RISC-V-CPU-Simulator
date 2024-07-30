@@ -304,23 +304,39 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 
   if(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0)){
     if(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1){
+
+      #ifdef DEBUG_CYCLE
       printf("[FWD]: Resolving EX hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1);
+      #endif
+
       pwires_p->forwardA = 0x2;
     }
     if(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2){
+
+      #ifdef DEBUG_CYCLE
       printf("[FWD]: Resolving EX hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
+      #endif
+
       pwires_p->forwardB = 0x2;
     }
   }
   if(pregs_p->memwb_preg.out.Reg_Write && (pregs_p->memwb_preg.out.rd != 0)){
     if ((pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs1) &&
      !(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0) && (pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1))){
+      
+      #ifdef DEBUG_CYCLE
       printf("[FWD]: Resolving MEM hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1);
+      #endif
+
       pwires_p->forwardA = 0x1;
     }
     if ((pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs2) &&
      !(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0) && (pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2))){
+      
+      #ifdef DEBUG_CYCLE
       printf("[FWD]: Resolving MEM hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
+      #endif
+
       pwires_p->forwardB = 0x1;
     }
   }
@@ -383,7 +399,9 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
     pwires_p->IFIDWriteHZD = 1;
     pwires_p->ControlMUXHZD = 1;
 
+    #ifdef DEBUG_CYCLE
     printf("[HZD]: Stalling and rewriting PC: 0x%08x\n", pregs_p->ifid_preg.inp.instr_addr);
+    #endif
   }
   else {
     // If no hazard
@@ -401,7 +419,10 @@ uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, ui
 {
   // Flush Pipeline if Branch is taken
   if (pwires_p->pcsrc == 1){
+    
+    #ifdef DEBUG_CYCLE
     printf("[CPL]: Pipeline Flushed\n");
+    #endif
 
     pregs_p->ifid_preg.inp.instr.ujtype.opcode = 0x13;
     pregs_p->ifid_preg.inp.instr.ujtype.rd = 0;
