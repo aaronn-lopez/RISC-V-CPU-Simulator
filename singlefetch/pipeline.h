@@ -14,6 +14,7 @@ extern simulator_config_t sim_config;
 extern uint64_t miss_count;
 extern uint64_t hit_count;
 extern uint64_t total_cycle_counter;
+extern uint64_t mem_access_counter;
 extern uint64_t stall_counter;
 extern uint64_t branch_counter;
 extern uint64_t fwd_exex_counter;
@@ -66,6 +67,9 @@ typedef struct
   uint32_t funct3;
   uint32_t contents;
   uint8_t rd;
+  uint32_t rs1_val;
+  uint32_t rs2_val;
+  uint32_t imm;
   bool zero;
   bool Branch;
   bool Mem_Read;
@@ -83,6 +87,9 @@ typedef struct
   uint32_t Read_Address;
   uint32_t Write_Data;
   uint8_t rd;
+  uint32_t rs1_val;
+  uint32_t rs2_val;
+  uint32_t imm;
   bool Memto_Reg;
   bool Reg_Write;
   bool Mem_Read;
