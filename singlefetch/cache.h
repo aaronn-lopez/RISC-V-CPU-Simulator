@@ -1,6 +1,5 @@
 #ifndef CACHE_H
 #define CACHE_H
-
 #include "dogfault.h"
 #include <assert.h>
 #include <ctype.h>
@@ -10,23 +9,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <stdio.h>
+#include "utils.h"
+#include "config.h"
 enum status_enum {
   CACHE_MISS = 0,
   CACHE_HIT = 1,
   CACHE_EVICT = 2
 };
 
-#define CACHE_HIT_RETURN_VALUE 2    // hit latency
-#define CACHE_MISS_RETURN_VALUE 10  // miss latency
-#define CACHE_OTHER_RETURN_VALUE 10 // eviction latency
+#define CACHE_HIT_LATENCY 2    // hit latency
+#define CACHE_MISS_LATENCY MEM_LATENCY+CACHE_HIT_LATENCY  // miss latency
+#define CACHE_OTHER_LATENCY MEM_LATENCY+CACHE_HIT_LATENCY // eviction latency
 #define CACHE_SET_BITS 4 // number of sets (2^CACHE_SET_BITS)
 #define CACHE_LINES_PER_SET 4 // Number of lines per set (associativity)
 #define CACHE_BLOCK_BITS 6 // number of blocks (2^CACHE_BLOCK_BITS)
 #define CACHE_DISPLAY_TRACE false
 #define CACHE_LFU 1 // LRU
-#define CACHE_DEBUG
-
 
 // Struct definitions
 typedef struct {
@@ -61,12 +60,8 @@ typedef struct {
     unsigned long long victim_block_addr;
 } result;
 
-// allocate the memory space for the cache with the given cache parameters
-// and initialize the cache sets and lines.
-// Initialize the cache name to the given name
+// Function declarations
 void cacheSetUp(Cache *cache, char *name);
-
-// deallocate the memory space for the cache
 void deallocate(Cache *cache);
 result operateCache(const unsigned long long address, Cache *cache);
 int processCacheOperation(unsigned long address, Cache *cache);
