@@ -233,6 +233,8 @@ memwb_reg_t type).
 */
 memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* memory_p, Cache* cache_p)
 {
+  uint32_t address;
+  uint32_t latency;
   memwb_reg_t memwb_reg = {0};
 
   if (exmem_reg.Mem_Read) {
@@ -294,25 +296,22 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
   printf("[MEM]: Instruction [%08x]@[%08x]: ", exmem_reg.instr.bits, exmem_reg.instr_addr);
   decode_instruction(exmem_reg.instr.bits);
   #endif
-  
-  uint32_t address;
-  uint32_t latency;
 
   if (exmem_reg.Mem_Write || exmem_reg.Mem_Read) {
-        address = memwb_reg.rs1_val + memwb_reg.imm;
+    address = memwb_reg.rs1_val + memwb_reg.imm;
     if (processCacheOperation(address, cache_p) == CACHE_HIT_LATENCY) {
       latency = CACHE_HIT_LATENCY; 
       total_cycle_counter += (CACHE_HIT_LATENCY - 1);
       hit_count++;
-
     } else {
       latency = CACHE_MISS_LATENCY;
       total_cycle_counter += (CACHE_MISS_LATENCY - 1);
       miss_count++;
     }
-  #ifdef PRINT_CACHE_TRACES
-  printf("[MEM]: Cache latency at addr: 0x%08x: %d cycles\n", address, latency);
-  #endif
+    
+    #ifdef PRINT_CACHE_TRACES
+    printf("[MEM]: Cache latency at addr: 0x%08x: %d cycles\n", address, latency);
+    #endif
   }  
   return memwb_reg;
 }
@@ -368,7 +367,8 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
   pregs_p->ifid_preg.inp  = stage_fetch     (pwires_p, regfile_p, memory_p);
 
   detect_hazard(pregs_p, pwires_p, regfile_p);
-  #ifdef PRINT_STATS
+  
+  #ifdef PRINT_STATS // only runs for defined configs
   if(pwires_p->IFIDWriteHZD == 1) {
     stall_counter++;
     pregs_p->ifid_preg.inp = pregs_p->ifid_preg.out;
@@ -378,7 +378,7 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
 
   pregs_p->idex_preg.inp  = stage_decode    (pregs_p->ifid_preg.out, pwires_p, regfile_p);
   
-  #ifdef PRINT_STATS
+  #ifdef PRINT_STATS // only runs for defined configs
   gen_forward(pregs_p, pwires_p);
   #endif
 
@@ -388,7 +388,7 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
 
                             stage_writeback (pregs_p->memwb_preg.out, pwires_p, regfile_p);
 
-  #ifdef PRINT_STATS // only runs for ms2, 3, 4
+  #ifdef PRINT_STATS // only runs for defined configs
   branch_counter = flush_pipeline(pregs_p, pwires_p, branch_counter);
   #endif
 
