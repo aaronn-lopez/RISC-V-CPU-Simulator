@@ -7,6 +7,7 @@
 #include "stage_helpers.h"
 
 uint64_t total_cycle_counter = 0;
+uint64_t mem_access_counter = 0;
 uint64_t miss_count = 0;
 uint64_t hit_count = 0;
 uint64_t stall_counter = 0;
@@ -200,6 +201,9 @@ if (idex_reg.Branch) {
 
   // Pass to exmem
   exmem_reg.rd = idex_reg.rd;
+  exmem_reg.rs1_val = idex_reg.rs1_val;
+  exmem_reg.rs2_val = idex_reg.rs2_val;
+  exmem_reg.imm = idex_reg.imm;
   exmem_reg.instr = idex_reg.instr;  
   exmem_reg.instr.bits = idex_reg.instr.bits;
   exmem_reg.funct3 = idex_reg.funct3;
@@ -270,6 +274,9 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
   }
 
   memwb_reg.rd = exmem_reg.rd;
+  memwb_reg.rs1_val = exmem_reg.rs1_val;
+  memwb_reg.rs2_val = exmem_reg.rs2_val;
+  memwb_reg.imm = exmem_reg.imm;
   
   memwb_reg.Memto_Reg = exmem_reg.Memto_Reg;
   memwb_reg.Reg_Write = exmem_reg.Reg_Write;
@@ -287,6 +294,26 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
   printf("[MEM]: Instruction [%08x]@[%08x]: ", exmem_reg.instr.bits, exmem_reg.instr_addr);
   decode_instruction(exmem_reg.instr.bits);
   #endif
+  
+  uint32_t address;
+  uint32_t latency;
+
+  if (exmem_reg.Mem_Write || exmem_reg.Mem_Read) {
+        address = memwb_reg.rs1_val + memwb_reg.imm;
+    if (processCacheOperation(address, cache_p) == CACHE_HIT_LATENCY) {
+      latency = CACHE_HIT_LATENCY; 
+      total_cycle_counter += (CACHE_HIT_LATENCY - 1);
+      hit_count++;
+
+    } else {
+      latency = CACHE_MISS_LATENCY;
+      total_cycle_counter += (CACHE_MISS_LATENCY - 1);
+      miss_count++;
+    }
+  #ifdef PRINT_CACHE_TRACES
+  printf("[MEM]: Cache latency at addr: 0x%08x: %d cycles\n", address, latency);
+  #endif
+  }  
   return memwb_reg;
 }
 
@@ -341,16 +368,19 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
   pregs_p->ifid_preg.inp  = stage_fetch     (pwires_p, regfile_p, memory_p);
 
   detect_hazard(pregs_p, pwires_p, regfile_p);
-  
+  #ifdef PRINT_STATS
   if(pwires_p->IFIDWriteHZD == 1) {
     stall_counter++;
     pregs_p->ifid_preg.inp = pregs_p->ifid_preg.out;
     pwires_p->IFIDWriteHZD = 0;
   }
+  #endif
 
   pregs_p->idex_preg.inp  = stage_decode    (pregs_p->ifid_preg.out, pwires_p, regfile_p);
-
+  
+  #ifdef PRINT_STATS
   gen_forward(pregs_p, pwires_p);
+  #endif
 
   pregs_p->exmem_preg.inp = stage_execute   (pregs_p->idex_preg.out, pwires_p);
 
