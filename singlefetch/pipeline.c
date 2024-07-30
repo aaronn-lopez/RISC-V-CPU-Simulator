@@ -42,6 +42,16 @@ ifid_reg_t stage_fetch(pipeline_wires_t* pwires_p, regfile_t* regfile_p, Byte* m
       regfile_p->PC = pwires_p->pc_src0; // PC+4
   }
 
+  //Hazard check
+  if(pwires_p->PCWriteHZD == 1)
+  {
+    regfile_p->PC = regfile_p->PC - 4; // Re-fetch instruction
+    pwires_p->pc_src0 = regfile_p->PC; 
+    pwires_p->PCWriteHZD = 0;
+  }
+
+  pwires_p->pc_src0 = regfile_p->PC+4; // Next instruction
+
   // Get instruction from memory
   uint32_t instruction_bits = *(uint32_t *)(memory_p + regfile_p->PC);
 
@@ -66,6 +76,21 @@ idex_reg_t stage_decode(ifid_reg_t ifid_reg, pipeline_wires_t* pwires_p, regfile
 
   // updating idex_reg
   idex_reg = gen_control(ifid_reg.instr);
+
+  // flush the control if hazard detected
+  if(pwires_p->ControlMUXHZD == 1)
+  {
+    idex_reg.ALUOp = 0;
+    idex_reg.ALUSrc = 0;
+    idex_reg.Branch = 0;
+    idex_reg.Mem_Read = 0;
+    idex_reg.Memto_Reg = 0;
+    idex_reg.Mem_Write = 0;
+    idex_reg.Reg_Write = 0;
+
+    pwires_p->ControlMUXHZD = 0;
+  }
+
   idex_reg.instr = ifid_reg.instr;  
   idex_reg.instr.bits = ifid_reg.instr.bits;
   idex_reg.instr_addr = ifid_reg.instr_addr;
@@ -96,7 +121,7 @@ idex_reg_t stage_decode(ifid_reg_t ifid_reg, pipeline_wires_t* pwires_p, regfile
 
   idex_reg.imm = gen_imm(idex_reg.instr);
   idex_reg.rd = (idex_reg.instr.bits >> 7) & ((1U << 5) - 1);
-  idex_reg.funct7 = (((idex_reg.instr.bits >> 30) & 1U));    
+  idex_reg.funct7 = (((idex_reg.instr.bits >> 25) & ((1U<<7)-1)));
   idex_reg.funct3 = ((idex_reg.instr.bits >> 12) & ((1U << 3) - 1));
 
   #ifdef DEBUG_CYCLE
@@ -147,14 +172,14 @@ exmem_reg_t stage_execute(idex_reg_t idex_reg, pipeline_wires_t* pwires_p)
     idex_reg.Branch = gen_branch(idex_reg.rs1_val, idex_reg.rs2_val, idex_reg.funct3);
   }
   
-// ALU execution
+  //ALU execution
   idex_reg.alu_control = gen_alu_control(idex_reg);
   exmem_reg.Read_Address = execute_alu(idex_reg.rs1_val, idex_reg.rs2_val, idex_reg.alu_control);
 
-  if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address == 0) && (idex_reg.funct3 == 0x0)) { //beq
+  if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address == 0) && (idex_reg.funct3 == 0x0)) { // beq
     exmem_reg.zero = 1;
   }
-  else if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address != 0) && (idex_reg.funct3 == 0x1)) { //bne
+  else if ((idex_reg.ALUOp == 0x1) && (exmem_reg.Read_Address != 0) && (idex_reg.funct3 == 0x1)) { // bne
     exmem_reg.zero = 1;
   }
   else if (idex_reg.ALUOp == 0x5) { // jal
@@ -179,7 +204,6 @@ if (idex_reg.Branch) {
   exmem_reg.instr.bits = idex_reg.instr.bits;
   exmem_reg.funct3 = idex_reg.funct3;
 
-  // Pass to exmem
   exmem_reg.Mem_Read = idex_reg.Mem_Read;
   exmem_reg.Mem_Write = idex_reg.Mem_Write;
   exmem_reg.Memto_Reg = idex_reg.Memto_Reg;
@@ -279,20 +303,18 @@ void stage_writeback(memwb_reg_t memwb_reg, pipeline_wires_t* pwires_p, regfile_
 {
   // Only write back if Reg_Write is true
   if (memwb_reg.Reg_Write) {
-        // Determine whether to write from Read_Data or Read_Address
-      if (memwb_reg.Memto_Reg) {
-          memwb_reg.Write_Data = memwb_reg.Read_Data;
-      } else {
-          memwb_reg.Write_Data = memwb_reg.Read_Address; // stored in Read_Address
-      }
+    // Determine whether to write from Read_Data or Read_Address
+    if (memwb_reg.Memto_Reg) {
+      memwb_reg.Write_Data = memwb_reg.Read_Data;
+    } else {
+      memwb_reg.Write_Data = memwb_reg.Read_Address; // stored in Read_Address
+    }
 
-      // Write data to register
-      if (memwb_reg.rd != 0) { // Avoid writing to register x0
-          regfile_p->R[memwb_reg.rd] = memwb_reg.Write_Data;
-      }
+    // Write data to register
+    if (memwb_reg.rd != 0) { // Avoid writing to register x0
+      regfile_p->R[memwb_reg.rd] = memwb_reg.Write_Data;
+    }
   }
-
-  pwires_p->pc_src0 = regfile_p->PC+4;
 
   #ifdef DEBUG_CYCLE
   printf("[WB ]: Instruction [%08x]@[%08x]: ", memwb_reg.instr.bits, memwb_reg.instr_addr );
@@ -320,6 +342,12 @@ void cycle_pipeline(regfile_t* regfile_p, Byte* memory_p, Cache* cache_p, pipeli
 
   detect_hazard(pregs_p, pwires_p, regfile_p);
   
+  if(pwires_p->IFIDWriteHZD == 1) {
+    stall_counter++;
+    pregs_p->ifid_preg.inp = pregs_p->ifid_preg.out;
+    pwires_p->IFIDWriteHZD = 0;
+  }
+
   pregs_p->idex_preg.inp  = stage_decode    (pregs_p->ifid_preg.out, pwires_p, regfile_p);
 
   gen_forward(pregs_p, pwires_p);

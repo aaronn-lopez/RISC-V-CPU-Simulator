@@ -24,18 +24,18 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
     case 0x2: // R-type
       switch (idex_reg.funct3)   {
         case 0x0:
-          if (idex_reg.funct7 == 0) {
+          if (idex_reg.funct7 == 0x0) {
             alu_control = 0x2; // add
-          } else if (idex_reg.funct7 == 1) {
+          } else if (idex_reg.funct7 == 0x20) {
             alu_control = 0x6; // subt
-          } else {
+          } else if (idex_reg.funct7 == 0x01) {
             alu_control = 0xC; // mul
             }
           break;
         case 0x1: 
-          if (idex_reg.funct7 == 0) {
+          if (idex_reg.funct7 == 0x0) {
             alu_control = 0x7; // sll
-          } else if (idex_reg.funct7 == 1) {
+          } else if (idex_reg.funct7 == 0x01) {
             alu_control = 0xD; // mulh
           }
           break;
@@ -46,9 +46,9 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
           alu_control = 0x9; // xor
           break;
         case 0x5:
-          if (idex_reg.funct7 == 0) {
+          if (idex_reg.funct7 == 0x0) {
             alu_control = 0xA; // srl
-          } else if (idex_reg.funct7 == 1) {
+          } else if (idex_reg.funct7 == 0x20) {
             alu_control = 0xB; // sra
           }
           break;
@@ -61,32 +61,33 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
         default:
           break;
       }
+      break;
     case 0x3: // I-type
 	    switch (idex_reg.funct3) {
         case 0x0: 
-          alu_control = 0x2; // add
+          alu_control = 0x2; // addi
           break;
         case 0x1: 
-          alu_control = 0x7; // sll
+          alu_control = 0x7; // slli
           break;
         case 0x2: 
-          alu_control = 0x8; // slt
+          alu_control = 0x8; // slti
           break;
         case 0x4: 
-          alu_control = 0x9; // xor
+          alu_control = 0x9; // xori
           break;
         case 0x5:
-            if (idex_reg.funct7 == 0) {
-              alu_control = 0xA; // srl
-            } else if (idex_reg.funct7 == 1) {
-              alu_control = 0xB; // sra
+            if ((idex_reg.imm >> 5) == 0x0) {
+              alu_control = 0xA; // srli
+            } else if ((idex_reg.imm >> 5) == 0x20) {
+              alu_control = 0xB; // srai
             }
             break;
         case 0x6: 
-          alu_control = 0x1; // or
+          alu_control = 0x1; // ori
           break;
         case 0x7: 
-          alu_control = 0x0; // and
+          alu_control = 0x0; // andi
           break;
         default:
             break;
@@ -168,26 +169,26 @@ uint32_t gen_imm(Instruction instruction)
 {
   int imm_val = 0;
   switch(instruction.opcode) {
-        case 0x03: //L-type
-	      case 0x13: //I-type
-            imm_val = sign_extend_number(instruction.itype.imm,12); 
-            break;
-	      case 0x23: //S-type
-            imm_val = get_store_offset(instruction);
-            break;
-	      case 0x37: //U-type
-            imm_val = instruction.utype.imm;
-            break;
-        case 0x6f: //UJ-type
-            imm_val = sign_extend_number(get_jump_offset(instruction), 21);
-            break;
-        case 0x63: //SB-type
-            imm_val = sign_extend_number(get_branch_offset(instruction), 13);
-            break;
-        default: // R and undefined opcode
-            break;
-    };
-    return imm_val;
+    case 0x03: // L-type
+    case 0x13: // I-type
+        imm_val = sign_extend_number(instruction.itype.imm,12); 
+        break;
+    case 0x23: // S-type
+        imm_val = get_store_offset(instruction);
+        break;
+    case 0x37: // U-type
+        imm_val = instruction.utype.imm;
+        break;
+    case 0x6f: // UJ-type
+        imm_val = sign_extend_number(get_jump_offset(instruction), 21);
+        break;
+    case 0x63: // SB-type
+        imm_val = sign_extend_number(get_branch_offset(instruction), 13);
+        break;
+    default: // R and undefined opcode
+        break;
+  };
+  return imm_val;
 }
 
 /**
@@ -199,69 +200,69 @@ idex_reg_t gen_control(Instruction instruction)
 {
   idex_reg_t idex_reg = {0};
   switch(instruction.opcode) {
-      case 0x33:  //R-type
-        idex_reg.ALUOp = 0x2;
-        idex_reg.ALUSrc = 0;
-        idex_reg.Branch = 0;
-        idex_reg.Mem_Read = 0;
-        idex_reg.Memto_Reg = 0;
-        idex_reg.Mem_Write = 0;
-        idex_reg.Reg_Write = 1;
-        break;
-      case 0x13: // I-type except load
-        idex_reg.ALUOp = 0x3;
-        idex_reg.ALUSrc = 1;
-        idex_reg.Branch = 0;
-        idex_reg.Mem_Read = 0;
-        idex_reg.Memto_Reg = 0; 
-        idex_reg.Mem_Write = 0;
-        idex_reg.Reg_Write = 1;
-        break;
-      case 0x03: // Load
-        idex_reg.ALUOp = 0;
-        idex_reg.ALUSrc = 1;
-        idex_reg.Branch = 0;
-        idex_reg.Mem_Read = 1;
-        idex_reg.Memto_Reg = 1;
-        idex_reg.Mem_Write = 0;
-        idex_reg.Reg_Write = 1;
-        break;
-      case 0x23: // Store
-        idex_reg.ALUOp = 0;
-        idex_reg.ALUSrc = 1;
-        idex_reg.Branch = 0;
-        idex_reg.Mem_Read = 0;
-        idex_reg.Memto_Reg = 0;
-        idex_reg.Mem_Write = 1;
-        idex_reg.Reg_Write = 0;
-        break;
-      case 0x37: // U-type
-        idex_reg.ALUOp = 0x4;
-        idex_reg.ALUSrc = 1;
-        idex_reg.Branch = 0;
-        idex_reg.Mem_Read = 0;
-        idex_reg.Memto_Reg = 0;
-        idex_reg.Mem_Write = 0;
-        idex_reg.Reg_Write = 1;
-        break;
-      case 0x6f: // J-type
-        idex_reg.ALUOp = 0x5;
-        idex_reg.ALUSrc = 0;
-        idex_reg.Branch = 1;
-        idex_reg.Mem_Read = 0;
-        idex_reg.Memto_Reg = 0;
-        idex_reg.Mem_Write = 0;
-        idex_reg.Reg_Write = 1;
-        break;
-      case 0x63: // SB-type
-        idex_reg.ALUOp = 0x1;
-        idex_reg.ALUSrc = 0;
-        idex_reg.Branch = 1;
-        idex_reg.Mem_Read = 0;
-        idex_reg.Mem_Write = 0;
-        idex_reg.Reg_Write = 0;
-      default:  // Remaining opcodes
-        break;
+    case 0x33:  // R-type
+      idex_reg.ALUOp = 0x2;
+      idex_reg.ALUSrc = 0;
+      idex_reg.Branch = 0;
+      idex_reg.Mem_Read = 0;
+      idex_reg.Memto_Reg = 0;
+      idex_reg.Mem_Write = 0;
+      idex_reg.Reg_Write = 1;
+      break;
+    case 0x13: // I-type except load
+      idex_reg.ALUOp = 0x3;
+      idex_reg.ALUSrc = 1;
+      idex_reg.Branch = 0;
+      idex_reg.Mem_Read = 0;
+      idex_reg.Memto_Reg = 0; 
+      idex_reg.Mem_Write = 0;
+      idex_reg.Reg_Write = 1;
+      break;
+    case 0x03: // Load
+      idex_reg.ALUOp = 0;
+      idex_reg.ALUSrc = 1;
+      idex_reg.Branch = 0;
+      idex_reg.Mem_Read = 1;
+      idex_reg.Memto_Reg = 1;
+      idex_reg.Mem_Write = 0;
+      idex_reg.Reg_Write = 1;
+      break;
+    case 0x23: // Store
+      idex_reg.ALUOp = 0;
+      idex_reg.ALUSrc = 1;
+      idex_reg.Branch = 0;
+      idex_reg.Mem_Read = 0;
+      idex_reg.Memto_Reg = 0;
+      idex_reg.Mem_Write = 1;
+      idex_reg.Reg_Write = 0;
+      break;
+    case 0x37: // U-type
+      idex_reg.ALUOp = 0x4;
+      idex_reg.ALUSrc = 1;
+      idex_reg.Branch = 0;
+      idex_reg.Mem_Read = 0;
+      idex_reg.Memto_Reg = 0;
+      idex_reg.Mem_Write = 0;
+      idex_reg.Reg_Write = 1;
+      break;
+    case 0x6f: // J-type
+      idex_reg.ALUOp = 0x5;
+      idex_reg.ALUSrc = 0;
+      idex_reg.Branch = 1;
+      idex_reg.Mem_Read = 0;
+      idex_reg.Memto_Reg = 0;
+      idex_reg.Mem_Write = 0;
+      idex_reg.Reg_Write = 1;
+      break;
+    case 0x63: // SB-type
+      idex_reg.ALUOp = 0x1;
+      idex_reg.ALUSrc = 0;
+      idex_reg.Branch = 1;
+      idex_reg.Mem_Read = 0;
+      idex_reg.Mem_Write = 0;
+      idex_reg.Reg_Write = 0;
+    default:  // Remaining opcodes
+      break;
   }
   return idex_reg;
 }
@@ -275,6 +276,7 @@ idex_reg_t gen_control(Instruction instruction)
  **/
 bool gen_branch(uint32_t alu1, uint32_t alu2, uint32_t funct3)
 {
+  // Return true if bne or beq outcome is true and false otherwise
   if(alu1 == alu2 && (funct3 == 0x0))
   {
     return true;
@@ -311,34 +313,34 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
     }
   }
   if(pregs_p->memwb_preg.out.Reg_Write && (pregs_p->memwb_preg.out.rd != 0)){
-    if(!(pregs_p->exmem_preg.out.Reg_Write && !(pregs_p->exmem_preg.out.rd != 0))){
-      if(!(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1) && (pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs1)){
-        printf("[FWD]: Resolving MEM hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1);
-        pwires_p->forwardA = 0x1;
-      }
-      if(!(pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2) && (pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs2)){
-        printf("[FWD]: Resolving MEM hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
-        pwires_p->forwardB = 0x1;
-      }
+    if ((pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs1) &&
+     !(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0) && (pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs1))){
+      printf("[FWD]: Resolving MEM hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1);
+      pwires_p->forwardA = 0x1;
+    }
+    if ((pregs_p->memwb_preg.out.rd == pregs_p->idex_preg.out.rs2) &&
+     !(pregs_p->exmem_preg.out.Reg_Write && (pregs_p->exmem_preg.out.rd != 0) && (pregs_p->exmem_preg.out.rd == pregs_p->idex_preg.out.rs2))){
+      printf("[FWD]: Resolving MEM hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2);
+      pwires_p->forwardB = 0x1;
     }
   }
 
   //MUX for first ALU operand
   if (pwires_p->forwardA == 0x2) {
     pregs_p->idex_preg.out.rs1_val = pregs_p->exmem_preg.out.Read_Address;
-    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+    if (pregs_p->idex_preg.out.ALUSrc) { // store instruction
       pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
       pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
     }
   } 
   else if (pwires_p->forwardA == 0x1) {
-    if (pregs_p->memwb_preg.out.Mem_Read) {
+    if (pregs_p->memwb_preg.out.Memto_Reg) { // load instruction
       pregs_p->idex_preg.out.rs1_val = pregs_p->memwb_preg.out.Read_Data;
     } 
     else {
       pregs_p->idex_preg.out.rs1_val = pregs_p->memwb_preg.out.Read_Address;
     }
-    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+    if (pregs_p->idex_preg.out.ALUSrc) { // store instruction
       pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
       pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
     }
@@ -347,19 +349,19 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
   //MUX for second ALU operand
   if (pwires_p->forwardB == 0x2) {
     pregs_p->idex_preg.out.rs2_val = pregs_p->exmem_preg.out.Read_Address;
-    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+    if (pregs_p->idex_preg.out.ALUSrc) { // store instruction
       pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
       pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
     }
   } 
   else if (pwires_p->forwardB == 0x1) {
-    if (pregs_p->memwb_preg.out.Mem_Read) { //load instruction
+    if (pregs_p->memwb_preg.out.Memto_Reg) { // load instruction
       pregs_p->idex_preg.out.rs2_val = pregs_p->memwb_preg.out.Read_Data;
     } 
     else {
       pregs_p->idex_preg.out.rs2_val = pregs_p->memwb_preg.out.Read_Address;
     }
-    if (pregs_p->idex_preg.out.ALUSrc) { //store instruction
+    if (pregs_p->idex_preg.out.ALUSrc) { // store instruction
       pregs_p->idex_preg.out.Write_Address = pregs_p->idex_preg.out.rs2_val;
       pregs_p->idex_preg.out.rs2_val = pregs_p->idex_preg.out.imm;
     }
@@ -375,27 +377,19 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
   if (pregs_p->idex_preg.out.Mem_Read &&
     ((pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.rs1) || 
     (pregs_p->idex_preg.out.rd == pregs_p->ifid_preg.out.rs2))) {
-    // Stall
-    pregs_p->idex_preg.inp.ALUOp = 0;
-    pregs_p->idex_preg.inp.ALUSrc = 0;
-    pregs_p->idex_preg.inp.Branch = 0;
-    pregs_p->idex_preg.inp.Mem_Read = 0;
-    pregs_p->idex_preg.inp.Mem_Write = 0;
-    pregs_p->idex_preg.inp.Memto_Reg = 0;
-    pregs_p->idex_preg.inp.Reg_Write = 0;
 
     // Stop PC and IF/ID register update
-    pwires_p->PC_haz = 0;
-    pwires_p->ifid_haz = 0;
-    pwires_p->control_mux_haz = 0;
+    pwires_p->PCWriteHZD = 1;
+    pwires_p->IFIDWriteHZD = 1;
+    pwires_p->ControlMUXHZD = 1;
 
     printf("[HZD]: Stalling and rewriting PC: 0x%08x\n", pregs_p->ifid_preg.inp.instr_addr);
   }
   else {
-    //If no hazard
-    pwires_p->PC_haz = 1;
-    pwires_p->ifid_haz = 1;
-    pwires_p->control_mux_haz = 1;
+    // If no hazard
+    pwires_p->PCWriteHZD = 0;
+    pwires_p->IFIDWriteHZD = 0;
+    pwires_p->ControlMUXHZD = 0;
   }
 }
 
@@ -405,15 +399,10 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
 */
 uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, uint64_t branch_counter)
 {
-  //Flush Pipeline if Branch is taken
+  // Flush Pipeline if Branch is taken
   if (pwires_p->pcsrc == 1){
     printf("[CPL]: Pipeline Flushed\n");
-    // Prevent update of PC and IF/ID register
-    pwires_p->PC_haz = 0;            // Disable PC update
-    pwires_p->ifid_haz = 0;          // Disable IF/ID register update
-    pwires_p->control_mux_haz = 0; // Set control signals to zero (nop)
 
-    //flush ifid_preg
     pregs_p->ifid_preg.inp.instr.ujtype.opcode = 0x13;
     pregs_p->ifid_preg.inp.instr.ujtype.rd = 0;
     pregs_p->ifid_preg.inp.instr.ujtype.imm = 0;
@@ -421,7 +410,6 @@ uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, ui
     pregs_p->ifid_preg.out.instr.ujtype.rd = 0;
     pregs_p->ifid_preg.out.instr.ujtype.imm = 0;
 
-    //flush idex_preg
     pregs_p->idex_preg.inp.instr.rtype.opcode = 0x13;
     pregs_p->idex_preg.inp.instr.rtype.rd = 0;
     pregs_p->idex_preg.inp.instr.rtype.funct3 = 0;
@@ -435,7 +423,6 @@ uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, ui
     pregs_p->idex_preg.out.instr.rtype.rs2 = 0;
     pregs_p->idex_preg.out.instr.rtype.funct7 = 0;
 
-    //flush exmem_preg
     pregs_p->exmem_preg.inp.instr.rtype.opcode = 0x13;
     pregs_p->exmem_preg.inp.instr.rtype.rd = 0;
     pregs_p->exmem_preg.inp.instr.rtype.funct3 = 0;
@@ -477,12 +464,7 @@ uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, ui
     pregs_p->exmem_preg.out.Reg_Write = 0;
     return branch_counter + 1;
   }
-  else
-  { 
-    //If no hazard
-    pwires_p->PC_haz = 1;
-    pwires_p->ifid_haz = 1;
-    pwires_p->control_mux_haz = 1;
+  else { //If no hazard
     return branch_counter;
   }
 }

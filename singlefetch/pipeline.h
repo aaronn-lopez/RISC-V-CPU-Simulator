@@ -135,9 +135,9 @@ typedef struct
   uint32_t  pc_src1;
   uint32_t forwardA;
   uint32_t forwardB;
-  bool PC_haz;
-  bool ifid_haz;
-  bool control_mux_haz;
+  bool PCWriteHZD;
+  bool IFIDWriteHZD;
+  bool ControlMUXHZD;
 }pipeline_wires_t;
 
 

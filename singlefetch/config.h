@@ -11,14 +11,14 @@
 //#define MEM_LATENCY 0		// before ms3, we ignore memory access latency
 
 // required for MS2 (test_simulator_ms2.sh)
-#define DEBUG_REG_TRACE
-#define DEBUG_CYCLE
-#define PRINT_STATS		// prints overall stats
-#define MEM_LATENCY 0
+//#define DEBUG_REG_TRACE
+//#define DEBUG_CYCLE
+//#define PRINT_STATS		// prints overall stats
+//#define MEM_LATENCY 0
 
 // required for MS2: vec_xprod.input (test_simulator_ms2_extended.sh)
-//#define PRINT_STATS
-//#define MEM_LATENCY 0
+#define PRINT_STATS
+#define MEM_LATENCY 0
 
 // required for MS3: (test_simulator_ms3.sh)
 //#define DEBUG_REG_TRACE
