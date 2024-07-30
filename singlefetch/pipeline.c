@@ -297,6 +297,7 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
   decode_instruction(exmem_reg.instr.bits);
   #endif
 
+  #ifdef CACHE_ENABLE
   if (exmem_reg.Mem_Write || exmem_reg.Mem_Read) {
     address = memwb_reg.rs1_val + memwb_reg.imm;
     if (processCacheOperation(address, cache_p) == CACHE_HIT_LATENCY) {
@@ -313,6 +314,7 @@ memwb_reg_t stage_mem(exmem_reg_t exmem_reg, pipeline_wires_t* pwires_p, Byte* m
     printf("[MEM]: Cache latency at addr: 0x%08x: %d cycles\n", address, latency);
     #endif
   }  
+  #endif
   return memwb_reg;
 }
 
