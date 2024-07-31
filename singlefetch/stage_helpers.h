@@ -7,10 +7,6 @@
 
 /// EXECUTE STAGE HELPERS ///
 
-/**
- * input  : idex_reg_t
- * output : uint32_t alu_control signal
- **/
 uint32_t gen_alu_control(idex_reg_t idex_reg)
 {
   uint32_t alu_control = 0;
@@ -105,10 +101,6 @@ uint32_t gen_alu_control(idex_reg_t idex_reg)
   return alu_control;
 }
 
-/**
- * input  : alu_inp1, alu_inp2, alu_control
- * output : uint32_t alu_result
- **/
 uint32_t execute_alu(uint32_t alu_inp1, uint32_t alu_inp2, uint32_t alu_control)
 {
   uint32_t result;
@@ -161,10 +153,6 @@ uint32_t execute_alu(uint32_t alu_inp1, uint32_t alu_inp2, uint32_t alu_control)
 
 /// DECODE STAGE HELPERS ///
 
-/**
- * input  : Instruction
- * output : idex_reg_t
- **/
 uint32_t gen_imm(Instruction instruction)
 {
   int imm_val = 0;
@@ -191,15 +179,11 @@ uint32_t gen_imm(Instruction instruction)
   return imm_val;
 }
 
-/**
- * generates all the control logic that flows around in the pipeline
- * input  : Instruction
- * output : idex_reg_t
- **/
-idex_reg_t gen_control(Instruction instruction)
+// Generates all the control logic that flows around in the pipeline
+idex_reg_t gen_control(Instruction instruction1, Instruction instruction2)
 {
   idex_reg_t idex_reg = {0};
-  switch(instruction.opcode) {
+  switch(instruction1.opcode) {
     case 0x33:  // R-type
       idex_reg.ALUOp = 0x2;
       idex_reg.ALUSrc = 0;
@@ -264,16 +248,77 @@ idex_reg_t gen_control(Instruction instruction)
     default:  // Remaining opcodes
       break;
   }
+ switch(instruction2.opcode) {
+    case 0x33:  // R-type
+      idex_reg.ALUOpDUAL = 0x2;
+      idex_reg.ALUSrcDUAL = 0;
+      idex_reg.BranchDUAL = 0;
+      idex_reg.Mem_ReadDUAL = 0;
+      idex_reg.Memto_RegDUAL = 0;
+      idex_reg.Mem_WriteDUAL = 0;
+      idex_reg.Reg_WriteDUAL = 1;
+      break;
+    case 0x13: // I-type except load
+      idex_reg.ALUOpDUAL = 0x3;
+      idex_reg.ALUSrcDUAL = 1;
+      idex_reg.BranchDUAL = 0;
+      idex_reg.Mem_ReadDUAL = 0;
+      idex_reg.Memto_RegDUAL = 0; 
+      idex_reg.Mem_WriteDUAL = 0;
+      idex_reg.Reg_WriteDUAL = 1;
+      break;
+    case 0x03: // Load
+      idex_reg.ALUOpDUAL = 0;
+      idex_reg.ALUSrcDUAL = 1;
+      idex_reg.BranchDUAL = 0;
+      idex_reg.Mem_ReadDUAL = 1;
+      idex_reg.Memto_RegDUAL = 1;
+      idex_reg.Mem_WriteDUAL = 0;
+      idex_reg.Reg_WriteDUAL = 1;
+      break;
+    case 0x23: // Store
+      idex_reg.ALUOpDUAL = 0;
+      idex_reg.ALUSrcDUAL = 1;
+      idex_reg.BranchDUAL = 0;
+      idex_reg.Mem_ReadDUAL = 0;
+      idex_reg.Memto_RegDUAL = 0;
+      idex_reg.Mem_WriteDUAL = 1;
+      idex_reg.Reg_WriteDUAL = 0;
+      break;
+    case 0x37: // U-type
+      idex_reg.ALUOpDUAL = 0x4;
+      idex_reg.ALUSrcDUAL = 1;
+      idex_reg.BranchDUAL = 0;
+      idex_reg.Mem_ReadDUAL = 0;
+      idex_reg.Memto_RegDUAL = 0;
+      idex_reg.Mem_WriteDUAL = 0;
+      idex_reg.Reg_WriteDUAL = 1;
+      break;
+    case 0x6f: // J-type
+      idex_reg.ALUOpDUAL = 0x5;
+      idex_reg.ALUSrcDUAL = 0;
+      idex_reg.BranchDUAL = 1;
+      idex_reg.Mem_ReadDUAL = 0;
+      idex_reg.Memto_RegDUAL = 0;
+      idex_reg.Mem_WriteDUAL = 0;
+      idex_reg.Reg_WriteDUAL = 1;
+      break;
+    case 0x63: // SB-type
+      idex_reg.ALUOpDUAL = 0x1;
+      idex_reg.ALUSrcDUAL = 0;
+      idex_reg.BranchDUAL = 1;
+      idex_reg.Mem_ReadDUAL = 0;
+      idex_reg.Mem_WriteDUAL = 0;
+      idex_reg.Reg_WriteDUAL = 0;
+    default:  // Remaining opcodes
+      break;
+  }
   return idex_reg;
 }
 
 /// MEMORY STAGE HELPERS ///
 
-/**
- * evaluates whether a branch must be taken
- * input  : <open to implementation>
- * output : bool
- **/
+// Evaluates whether a branch must be taken
 bool gen_branch(uint32_t alu1, uint32_t alu2, uint32_t funct3)
 {
   // Return true if bne or beq outcome is true and false otherwise
@@ -292,10 +337,6 @@ bool gen_branch(uint32_t alu1, uint32_t alu2, uint32_t funct3)
 
 /// PIPELINE FEATURES ///
 
-/**
- * input  : pipeline_regs_t*, pipeline_wires_t*
- * output : None
-*/
 void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
 {
   //By defualt, set both to 0. If there is no need for forwarding, A and B will exit function with value of 0
@@ -384,10 +425,6 @@ void gen_forward(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
   }
 }
 
-/**
- * input  : pipeline_regs_t*, pipeline_wires_t*
- * output : None
-*/
 void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile_t* regfile_p)
 {
   if (pregs_p->idex_preg.out.Mem_Read &&
@@ -411,10 +448,6 @@ void detect_hazard(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, regfile
   }
 }
 
-/**
- * input  : pipeline_regs_t*, pipeline_wires_t*, uint64_t
- * output : branch_counter update
-*/
 uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, uint64_t branch_counter)
 {
   // Flush Pipeline if Branch is taken
@@ -483,6 +516,8 @@ uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, ui
     pregs_p->exmem_preg.out.Mem_Write = 0;
     pregs_p->exmem_preg.out.Memto_Reg = 0;
     pregs_p->exmem_preg.out.Reg_Write = 0;
+
+    //need to add for DUAL 
     return branch_counter + 1;
   }
   else { //If no hazard
@@ -490,6 +525,205 @@ uint64_t flush_pipeline(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p, ui
   }
 }
 
+uint32_t gen_alu_controlDUAL(idex_reg_t idex_reg)
+{
+  uint32_t alu_control = 0;
+  switch (idex_reg.ALUOpDUAL) {
+    case 0x0: // lw or sw
+      alu_control = 0x2; // add
+      break;
+    case 0x1: // beq or bne
+      alu_control = 0x6; // subtract
+      break;
+    case 0x2: // R-type
+      switch (idex_reg.funct3DUAL)   {
+        case 0x0:
+          if (idex_reg.funct7DUAL == 0x0) {
+            alu_control = 0x2; // add
+          } else if (idex_reg.funct7DUAL == 0x20) {
+            alu_control = 0x6; // subt
+          } else if (idex_reg.funct7DUAL == 0x01) {
+            alu_control = 0xC; // mul
+            }
+          break;
+        case 0x1: 
+          if (idex_reg.funct7DUAL == 0x0) {
+            alu_control = 0x7; // sll
+          } else if (idex_reg.funct7DUAL == 0x01) {
+            alu_control = 0xD; // mulh
+          }
+          break;
+        case 0x2: 
+          alu_control = 0x8; // slt
+          break;
+        case 0x4: 
+          alu_control = 0x9; // xor
+          break;
+        case 0x5:
+          if (idex_reg.funct7DUAL == 0x0) {
+            alu_control = 0xA; // srl
+          } else if (idex_reg.funct7DUAL == 0x20) {
+            alu_control = 0xB; // sra
+          }
+          break;
+        case 0x6: 
+          alu_control = 0x1; // or
+          break;
+        case 0x7: 
+          alu_control = 0x0; // and
+          break;
+        default:
+          break;
+      }
+      break;
+    case 0x3: // I-type
+	    switch (idex_reg.funct3DUAL) {
+        case 0x0: 
+          alu_control = 0x2; // addi
+          break;
+        case 0x1: 
+          alu_control = 0x7; // slli
+          break;
+        case 0x2: 
+          alu_control = 0x8; // slti
+          break;
+        case 0x4: 
+          alu_control = 0x9; // xori
+          break;
+        case 0x5:
+            if ((idex_reg.immDUAL>> 5) == 0x0) {
+              alu_control = 0xA; // srli
+            } else if ((idex_reg.immDUAL >> 5) == 0x20) {
+              alu_control = 0xB; // srai
+            }
+            break;
+        case 0x6: 
+          alu_control = 0x1; // ori
+          break;
+        case 0x7: 
+          alu_control = 0x0; // andi
+          break;
+        default:
+            break;
+      }      
+        break; 
+    case 0x4: // lui
+      alu_control = 0xE;
+      break;
+    case 0x5: // jal
+      alu_control = 0xF;
+      break;
+    default:
+        break;
+  }
+  return alu_control;
+}
+
+// Check if the two instructions are able to be executed together
+// Cannot be done if there are hazards as explained
+bool dualIssue_hazard_check(exmem_reg_t instruction)
+{
+  if(instruction.instr.opcode != 0x03 && instruction.instr.opcode != 0x23) {
+    instruction.ins1type = 1; //1 represents ALU/Branch type
+  }
+  else if(instruction.instr.opcode == 0x03 || instruction.instr.opcode == 0x23) {
+    instruction.ins1type = 2; //2 represents Load/Store type
+  }
+
+  if(instruction.instrDUAL.opcode != 0x03 && instruction.instrDUAL.opcode != 0x23) {
+    instruction.ins2type = 1; //1 represents ALU/Branch type
+  }
+  else if(instruction.instrDUAL.opcode == 0x03 || instruction.instrDUAL.opcode == 0x23) {
+    instruction.ins2type = 2; //2 represents Load/Store type
+  }
+
+  if(instruction.ins2type == instruction.ins1type) { // check for structural hazard
+    return false;
+  }
+  else { //check for data hazard
+    if(instruction.Reg_Write && (instruction.rd != 0)){
+      if(instruction.rd == instruction.rs1DUAL || instruction.rd == instruction.rs2DUAL){
+        return false;
+      }
+      else { //check for control hazard
+        if((instruction.Branch & instruction.zero) == true) {
+          return false;
+        }
+        else {
+          return true;
+        }
+      }
+    }
+    else { //check for control hazard
+      if((instruction.Branch & instruction.zero) == true) {
+        return false;
+      }
+      else {
+        return true;
+      }
+    }
+  }
+}
+
+// Resolves hazard between the second instruction of one cycle and the second of the next
+// As dictated from the above function, we will not consider hazards between two instructions in the same cycle
+void gen_forwardDUAL(pipeline_regs_t* pregs_p, pipeline_wires_t* pwires_p)
+{
+  //By defualt, set both to 0. If there is no need for forwarding, A and B will exit function with value of 0
+  pwires_p->forwardADUAL = 0x0;
+  pwires_p->forwardBDUAL = 0x0;
+
+  if(pregs_p->memwb_preg.out.Reg_WriteDUAL && (pregs_p->memwb_preg.out.rdDUAL != 0)){
+    if((pregs_p->memwb_preg.out.rdDUAL == pregs_p->idex_preg.out.rs1DUAL) &&
+     !(pregs_p->exmem_preg.out.Reg_WriteDUAL && (pregs_p->exmem_preg.out.rdDUAL != 0) &&
+      (pregs_p->exmem_preg.out.rdDUAL == pregs_p->idex_preg.out.rs1DUAL))){
+      
+      #ifdef DEBUG_CYCLE
+      printf("[FWD]: Resolving MEM hazard on rs1: x%d\n", pregs_p->idex_preg.out.rs1DUAL);
+      #endif
+
+      pwires_p->forwardADUAL = 0x1;
+    }
+    if((pregs_p->memwb_preg.out.rdDUAL == pregs_p->idex_preg.out.rs2DUAL) &&
+     !(pregs_p->exmem_preg.out.Reg_WriteDUAL && (pregs_p->exmem_preg.out.rdDUAL != 0) &&
+      (pregs_p->exmem_preg.out.rdDUAL == pregs_p->idex_preg.out.rs2DUAL))){
+      
+      #ifdef DEBUG_CYCLE
+      printf("[FWD]: Resolving MEM hazard on rs2: x%d\n", pregs_p->idex_preg.out.rs2DUAL);
+      #endif
+
+      pwires_p->forwardBDUAL = 0x1;
+    }
+  }
+
+  //MUX for first ALU operand
+  if (pwires_p->forwardADUAL == 0x1) {
+    if (pregs_p->memwb_preg.out.Memto_RegDUAL) { // load instruction
+      pregs_p->idex_preg.out.rs1_valDUAL = pregs_p->memwb_preg.out.Read_DataDUAL;
+    } 
+    else {
+      pregs_p->idex_preg.out.rs1_valDUAL = pregs_p->memwb_preg.out.Read_AddressDUAL;
+    }
+    if (pregs_p->idex_preg.out.ALUSrcDUAL) { // store instruction
+      pregs_p->idex_preg.out.Write_AddressDUAL = pregs_p->idex_preg.out.rs2_valDUAL;
+      pregs_p->idex_preg.out.rs2_valDUAL = pregs_p->idex_preg.out.immDUAL;
+    }
+  }
+
+  //MUX for second ALU operand
+  if (pwires_p->forwardBDUAL== 0x1) {
+    if (pregs_p->memwb_preg.out.Memto_RegDUAL) { // load instruction
+      pregs_p->idex_preg.out.rs2_valDUAL = pregs_p->memwb_preg.out.Read_DataDUAL;
+    } 
+    else {
+      pregs_p->idex_preg.out.rs2_valDUAL = pregs_p->memwb_preg.out.Read_AddressDUAL;
+    }
+    if (pregs_p->idex_preg.out.ALUSrcDUAL) { // store instruction
+      pregs_p->idex_preg.out.Write_AddressDUAL = pregs_p->idex_preg.out.rs2_valDUAL;
+      pregs_p->idex_preg.out.rs2_valDUAL = pregs_p->idex_preg.out.immDUAL;
+    }
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 /// RESERVED FOR PRINTING REGISTER TRACE AFTER EACH CLOCK CYCLE ///

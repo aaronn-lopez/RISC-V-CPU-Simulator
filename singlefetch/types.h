@@ -45,8 +45,6 @@ typedef enum {
 /* This is the length of the memory space */
 #define MEMORY_SPACE (1024*1024) /* 1 MByte of Memory */
 
-/* If you haven't seen a union before, go look it up.
-   Seriously. They're fun. */
 typedef union {
    
   /* access opcode with: instruction.opcode */
@@ -105,7 +103,6 @@ typedef union {
 	  unsigned int imm7 : 7;
   } sbtype;
 
-  /* basically ignore this stuff*/
   int16_t chunks16[2];
   uint32_t bits;
 } Instruction;

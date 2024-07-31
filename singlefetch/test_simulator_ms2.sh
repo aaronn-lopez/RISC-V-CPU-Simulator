@@ -1,4 +1,3 @@
-# tests below are scored
 # remember to edit config.h accordingly before running this file!
 
 ./riscv -s -f ./code/ms2/input/R/R.input > ./code/ms2/out/R/R.trace

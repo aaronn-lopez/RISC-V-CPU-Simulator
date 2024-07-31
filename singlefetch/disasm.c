@@ -60,7 +60,6 @@ void decode_instruction(uint32_t instruction_bits) {
 }
 
 void write_rtype(Instruction instruction) {
-    /* YOUR CODE HERE */
     switch (instruction.rtype.funct3) {
         case 0x0:
             switch (instruction.rtype.funct7) {
@@ -78,8 +77,6 @@ void write_rtype(Instruction instruction) {
                 break;      
             }
             break;
-        /* YOUR CODE HERE */
-        /* call print_rtype */
 	    case 0x1:
            switch (instruction.rtype.funct7) {
                 case 0x00:
@@ -158,8 +155,6 @@ void write_rtype(Instruction instruction) {
 
 void write_itype_except_load(Instruction instruction) {
     switch (instruction.itype.funct3) {
-      /* YOUR CODE HERE */
-      /* call print_itype_except_load */
 	    case 0x0:
             print_itype_except_load("addi", instruction, instruction.itype.imm);
             break;
@@ -205,8 +200,6 @@ void write_itype_except_load(Instruction instruction) {
 
 void write_load(Instruction instruction) {
     switch (instruction.itype.funct3) {
-      /* YOUR CODE HERE */
-      /* call print_load */
 	    case 0x0:
             print_load("lb", instruction);
             break;
@@ -224,8 +217,6 @@ void write_load(Instruction instruction) {
 
 void write_store(Instruction instruction) {
     switch (instruction.stype.funct3) {
-      /* YOUR CODE HERE */
-      /* call print_store */
 	    case 0x0:
             print_store("sb", instruction);
             break;
@@ -243,8 +234,6 @@ void write_store(Instruction instruction) {
 
 void write_branch(Instruction instruction) {
     switch (instruction.sbtype.funct3) {
-      /* YOUR CODE HERE */
-      /* call print_branch */
 	    case 0x0:
             print_branch("beq", instruction);
             break;
@@ -258,47 +247,39 @@ void write_branch(Instruction instruction) {
 }
 
 void print_rtype(char *name, Instruction instruction) {
-  printf(RTYPE_FORMAT, name, instruction.rtype.rd, instruction.rtype.rs1,
-         instruction.rtype.rs2);
+  printf(RTYPE_FORMAT, name, instruction.rtype.rd, instruction.rtype.rs1, instruction.rtype.rs2);
 }
 
 void print_itype_except_load(char *name, Instruction instruction, int imm) {
-    /* YOUR CODE HERE */
 	if (instruction.itype.funct3 == 0x1 || instruction.itype.funct3 == 0x5) { // check for "slli", "srli", and "srai" and output imm[4:0]
-  printf(ITYPE_FORMAT, name, instruction.itype.rd, instruction.itype.rs1, (sign_extend_number(instruction.itype.imm, 12) & ((1U << 5) - 1)));
-  return;
+        printf(ITYPE_FORMAT, name, instruction.itype.rd, instruction.itype.rs1, (sign_extend_number(instruction.itype.imm, 12) & ((1U << 5) - 1)));
+        return;
 	} else { // other itype except load
-	printf(ITYPE_FORMAT, name, instruction.itype.rd, instruction.itype.rs1, sign_extend_number(instruction.itype.imm, 12));
-	return;
+	    printf(ITYPE_FORMAT, name, instruction.itype.rd, instruction.itype.rs1, sign_extend_number(instruction.itype.imm, 12));
+	    return;
 	}
 }
 
 void print_load(char *name, Instruction instruction) {
-    /* YOUR CODE HERE */
   printf(MEM_FORMAT, name, instruction.itype.rd, sign_extend_number(instruction.itype.imm, 12), instruction.itype.rs1);
 }
 
 void print_store(char *name, Instruction instruction) {
-    /* YOUR CODE HERE */
   printf(MEM_FORMAT, name, instruction.stype.rs2, get_store_offset(instruction), instruction.stype.rs1);
 }
 
 void print_branch(char *name, Instruction instruction) {
-    /* YOUR CODE HERE */
   printf(BRANCH_FORMAT, name, instruction.sbtype.rs1, instruction.sbtype.rs2, sign_extend_number(get_branch_offset(instruction), 13));
 }
 
 void print_lui(Instruction instruction) {
-    /* YOUR CODE HERE */
   printf(LUI_FORMAT, instruction.utype.rd, instruction.utype.imm);
 }
 
 void print_jal(Instruction instruction) {
-    /* YOUR CODE HERE */
   printf(JAL_FORMAT, instruction.ujtype.rd, sign_extend_number(get_jump_offset(instruction), 21));
 }
 
 void print_ecall(Instruction instruction) {
-    /* YOUR CODE HERE */
   printf(ECALL_FORMAT);
 }

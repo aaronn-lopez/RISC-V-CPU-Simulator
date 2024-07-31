@@ -21,6 +21,8 @@ enum status_enum {
 #define CACHE_HIT_LATENCY 2    // hit latency
 #define CACHE_MISS_LATENCY MEM_LATENCY+CACHE_HIT_LATENCY  // miss latency
 #define CACHE_OTHER_LATENCY MEM_LATENCY+CACHE_HIT_LATENCY // eviction latency
+
+//cache size (default 4, 4, 6 respectively = 4096 bytes or 4K)
 #define CACHE_SET_BITS 4 // number of sets (2^CACHE_SET_BITS)
 #define CACHE_LINES_PER_SET 4 // Number of lines per set (associativity)
 #define CACHE_BLOCK_BITS 6 // number of blocks (2^CACHE_BLOCK_BITS)

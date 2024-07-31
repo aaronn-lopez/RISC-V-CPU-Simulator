@@ -1,4 +1,3 @@
-# tests below are scored
 # remember to update config.h accordingly before running this!
 
 # full version of vec_xprod only contains the stats of the program, not the entire reg-trace

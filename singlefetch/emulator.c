@@ -75,8 +75,7 @@ void execute_rtype(Instruction instruction, Processor *processor) {
                     break;
             }
             break;
-        /* YOUR CODE HERE */
-	/* deal with other cases */
+	    // deal with other cases
 	    case 0x1:
             switch (instruction.rtype.funct7) {
                 case 0x00:
@@ -183,7 +182,6 @@ void execute_rtype(Instruction instruction, Processor *processor) {
 
 void execute_itype_except_load(Instruction instruction, Processor *processor) {
 	switch (instruction.itype.funct3) {
-        /* YOUR CODE HERE */
 	    case 0x0:
             // addi                  
             processor->R[instruction.itype.rd] =
@@ -291,7 +289,6 @@ void execute_ecall(Processor *p, Byte *memory) {
 
 void execute_branch(Instruction instruction, Processor *processor) {
     switch (instruction.sbtype.funct3) {
-        /* YOUR CODE HERE */
 	case 0x0:
  	// beq
  	if(((sWord)processor->R[instruction.sbtype.rs1]) == ((sWord)processor->R[instruction.sbtype.rs2])) {
@@ -304,7 +301,7 @@ void execute_branch(Instruction instruction, Processor *processor) {
  	// bne
  	if(((sWord)processor->R[instruction.sbtype.rs1]) != ((sWord)instruction.sbtype.rs2)) {
  	processor->PC = processor->PC +
-	sign_extend_number(get_branch_offset(instruction), 13); //PC = PC+ ;
+	sign_extend_number(get_branch_offset(instruction), 13);
  	} else {
 		processor->PC += 4;
 	}
@@ -318,7 +315,6 @@ void execute_branch(Instruction instruction, Processor *processor) {
 
 void execute_load(Instruction instruction, Processor *processor, Byte *memory) {
     switch (instruction.itype.funct3) {
-        /* YOUR CODE HERE */
 	case 0x0: // lb
 		processor->R[instruction.rtype.rd] = sign_extend_number(load(memory, ((sWord)processor->R[instruction.rtype.rs1]) + sign_extend_number(instruction.itype.imm, 12), LENGTH_BYTE), 8);
 	break;
@@ -337,7 +333,6 @@ void execute_load(Instruction instruction, Processor *processor, Byte *memory) {
 
 void execute_store(Instruction instruction, Processor *processor, Byte *memory) {
     switch (instruction.stype.funct3) {
-        /* YOUR CODE HERE */
 	case 0x0: //sb
 	store(memory, ((sWord)processor->R[instruction.rtype.rs1]) + get_store_offset(instruction), LENGTH_BYTE, ((sWord)processor->R[instruction.rtype.rs2]));
 	break;
@@ -356,19 +351,16 @@ void execute_store(Instruction instruction, Processor *processor, Byte *memory) 
 }
 
 void execute_jal(Instruction instruction, Processor *processor) {
-    /* YOUR CODE HERE */
 	processor->R[instruction.ujtype.rd] = processor->PC + 4;
     processor->PC = processor->PC + sign_extend_number(get_jump_offset(instruction), 13);
 }
 
 void execute_lui(Instruction instruction, Processor *processor) {
-    /* YOUR CODE HERE */
 	processor->R[instruction.ujtype.rd] = ((sWord)instruction.utype.imm) << 12;
 	processor->PC += 4;
 }
 
 void store(Byte *memory, Address address, Alignment alignment, Word value) {
-    /* YOUR CODE HERE */
 	if (alignment == LENGTH_BYTE) {
         memory[address] = value & 0xff;
     } else if (alignment == LENGTH_HALF_WORD) {

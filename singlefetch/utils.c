@@ -5,7 +5,6 @@
 /* Unpacks the 32-bit machine code instruction given into the correct
  * type within the instruction struct */
 Instruction parse_instruction(uint32_t instruction_bits) {
-  /* YOUR CODE HERE */
   Instruction instruction;
   // add x9, x20, x21   hex: 01 5A 04 B3, binary = 0000 0001 0101 1010 0000 0100 1011 0011
   // Opcode: 0110011 (0x33) Get the Opcode by &ing 0x1111111, bottom 7 bits
@@ -37,8 +36,7 @@ Instruction parse_instruction(uint32_t instruction_bits) {
     instruction.rtype.funct7 = instruction_bits & ((1U << 7) - 1);
     break;
   // cases for other types of instructions
-  /* YOUR CODE HERE */
-case 0x03: 
+  case 0x03: 
     instruction.itype.rd = instruction_bits & ((1U << 5) - 1);
     instruction_bits >>= 5;
 
@@ -64,7 +62,7 @@ case 0x03:
     instruction.itype.imm = instruction_bits & ((1U << 12) - 1);
     break;
     // System Instructions (I-Type)
-    case 0x73: 
+  case 0x73: 
     instruction.itype.rd = instruction_bits & ((1U << 5) - 1);
     instruction_bits >>= 5;
 
@@ -77,7 +75,7 @@ case 0x03:
     instruction.itype.imm = instruction_bits & ((1U << 12) - 1);
     break;
     // S-Type
-    case 0x23: 
+  case 0x23: 
     instruction.stype.imm5 = instruction_bits & ((1U << 5) - 1);
     instruction_bits >>= 5;
 
@@ -93,7 +91,7 @@ case 0x03:
     instruction.stype.imm7 = instruction_bits & ((1U << 7) - 1);
     break;
     // SB-Type
-    case 0x63: 
+  case 0x63: 
     instruction.sbtype.imm5 = instruction_bits & ((1U << 5) - 1);
     instruction_bits >>= 5;
 
@@ -109,7 +107,7 @@ case 0x03:
     instruction.sbtype.imm7 = instruction_bits & ((1U << 7) - 1);
     break;
     // U-Type
-    case 0x37:
+  case 0x37:
     instruction.utype.rd = instruction_bits & ((1U << 5) - 1);
     instruction_bits >>= 5;
 
@@ -131,33 +129,28 @@ case 0x03:
 }
 
 /************************Helper functions************************/
-/* Here, you will need to implement a few common helper functions, 
- * which you will call in other functions when parsing, printing, 
- * or executing the instructions. */
-
 /* Sign extends the given field to a 32-bit integer where field is
  * interpreted an n-bit integer. */
 int sign_extend_number(unsigned int field, unsigned int n) {
-  /* YOUR CODE HERE */
   // Check if the sign bit of the n-bit integer is set
   unsigned int sign_bit = 1U << (n - 1);
 
   // If the sign bit is set, extend the sign
   if((field & sign_bit)) {
-	// Create a mask with all bits set above the sign bit
-        unsigned int mask = ~((1U << n) - 1);
-        return field | mask;
-    } else {
-        // If the sign bit is not set, just return the field
-        field &= (1U << n) - 1;
-	    return field;
-    }
+	  // Create a mask with all bits set above the sign bit
+    unsigned int mask = ~((1U << n) - 1);
+    return field | mask;
+  } 
+  else {
+    // If the sign bit is not set, just return the field
+    field &= (1U << n) - 1;
+	  return field;
+  }
 }
 
 /* Return the number of bytes (from the current PC) to the branch label using
  * the given branch instruction */
 int get_branch_offset(Instruction instruction) {
-  /* YOUR CODE HERE */
   int imm4_1 = (instruction.sbtype.imm5 >> 1) & ((1U << 4) - 1); // extract imm[4:1] from imm5
   int imm11 = instruction.sbtype.imm5 & (1U); // extract imm[11] from imm 5
   int imm10_5 = instruction.sbtype.imm7 & ((1U << 6) - 1); // etract imm[10:5] from imm7
@@ -171,7 +164,6 @@ int get_branch_offset(Instruction instruction) {
 /* Returns the number of bytes (from the current PC) to the jump label using the
  * given jump instruction */
 int get_jump_offset(Instruction instruction) {
-  /* YOUR CODE HERE */
   int imm20 = instruction.ujtype.imm & (1U << 19); // extract imm[20]
   int imm10_1 = (instruction.ujtype.imm >> 9) & ((1U << 10) - 1); // extract imm[10:1]
   int imm11 = instruction.ujtype.imm & (1U << 8); // extract imm[11]
@@ -185,10 +177,9 @@ int get_jump_offset(Instruction instruction) {
 /* Returns the number of bytes (from the current PC) to the base address using the
  * given store instruction */
 int get_store_offset(Instruction instruction) {
-  /* YOUR CODE HERE */
   // combining imms together
   int offset = (instruction.stype.imm7 << 5) | (instruction.stype.imm5);
-    return offset;
+  return offset;
 }
 /************************Helper functions************************/
 

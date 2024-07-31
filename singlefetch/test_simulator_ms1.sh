@@ -1,4 +1,3 @@
-# tests below are scored
 # remember to enable DEBUG_REG_TRACE (check pipeline.h)
 # and DISABLE ALL OTHER PRINTS before generating this output
 ./riscv -s ./code/ms1/input/R/R.input > ./code/ms1/out/R/R.trace

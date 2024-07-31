@@ -64,9 +64,7 @@ int load_program(uint8_t *mem, size_t memsize, int startaddr,
   int programsize = 0;
   while (fgets(line, MAX_SIZE, file) != NULL) {
     instruction = (int32_t)strtol(line, NULL, 16);
-    // printf("[load_program]: Instruction: %x\n", instruction);
     programsize++;
-    // printf("%x, %d, %d\n", instruction, startaddr, offset);
     mem[startaddr + offset] = instruction & 0xFF;
     mem[startaddr + offset + 1] = (instruction >> 8) & 0xFF;
     mem[startaddr + offset + 2] = (instruction >> 16) & 0xFF;

@@ -30,6 +30,11 @@ typedef struct
   uint32_t    instr_addr;
   uint8_t rs1;
   uint8_t rs2; 
+
+  Instruction instrDUAL;
+  uint32_t    instr_addrDUAL;
+  uint8_t rs1DUAL;
+  uint8_t rs2DUAL;
 }ifid_reg_t;
 
 typedef struct
@@ -55,6 +60,28 @@ typedef struct
   bool Mem_Write;
   bool Memto_Reg;
   bool Reg_Write;
+
+  Instruction instrDUAL;
+  uint32_t    instr_addrDUAL;
+  uint8_t rs1DUAL;
+  uint8_t rs2DUAL;
+  uint32_t rs1_valDUAL;
+  uint32_t rs2_valDUAL;
+  uint32_t immDUAL;
+  uint32_t funct3DUAL;
+  uint32_t funct7DUAL;
+  uint32_t rdDUAL;  
+  uint32_t ALU_in_1DUAL;
+  uint32_t ALU_in_2DUAL;
+  uint32_t alu_controlDUAL;
+  uint8_t ALUOpDUAL;
+  uint32_t Write_AddressDUAL;
+  bool ALUSrcDUAL;
+  bool BranchDUAL;
+  bool Mem_ReadDUAL;
+  bool Mem_WriteDUAL;
+  bool Memto_RegDUAL;
+  bool Reg_WriteDUAL;
 }idex_reg_t;
 
 typedef struct
@@ -76,6 +103,30 @@ typedef struct
   bool Mem_Write;
   bool Memto_Reg;
   bool Reg_Write;
+
+  Instruction instrDUAL;
+  uint32_t    instr_addrDUAL;
+  uint32_t    instr_addr_immDUAL;
+  uint8_t rs1DUAL;
+  uint8_t rs2DUAL;
+  uint32_t rs1_valDUAL;
+  uint32_t rs2_valDUAL;
+  uint32_t immDUAL;
+  uint32_t funct3DUAL;
+  uint32_t rdDUAL;
+  uint32_t Read_AddressDUAL;
+  uint32_t Write_AddressDUAL;
+  uint32_t contentsDUAL;
+  bool zeroDUAL;
+  bool BranchDUAL;
+  bool Mem_ReadDUAL;
+  bool Mem_WriteDUAL;
+  bool Memto_RegDUAL;
+  bool Reg_WriteDUAL;
+  bool dualHazard;
+
+  int ins1type;
+  int ins2type;
 }exmem_reg_t;
 
 typedef struct
@@ -88,11 +139,26 @@ typedef struct
   uint32_t Write_Data;
   uint8_t rd;
   uint32_t rs1_val;
-  uint32_t rs2_val;
   uint32_t imm;
   bool Memto_Reg;
   bool Reg_Write;
   bool Mem_Read;
+
+  Instruction instrDUAL;
+  uint32_t    instr_addrDUAL;
+  uint32_t    instr_addr_immDUAL;
+  uint32_t rdDUAL;
+  uint32_t Read_AddressDUAL;
+  uint32_t Write_AddressDUAL;
+  uint32_t Write_DataDUAL;
+  uint32_t rs1_valDUAL;
+  uint32_t immDUAL;
+  uint32_t Read_DataDUAL;
+  bool Reg_WriteDUAL;
+  bool Mem_ReadDUAL;
+  bool Memto_RegDUAL;
+  bool dualHazard;
+
 }memwb_reg_t;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,9 +208,12 @@ typedef struct
   uint32_t  pc_src1;
   uint32_t forwardA;
   uint32_t forwardB;
+  uint32_t forwardADUAL;
+  uint32_t forwardBDUAL;
   bool PCWriteHZD;
   bool IFIDWriteHZD;
   bool ControlMUXHZD;
+  bool dualIssue;
 }pipeline_wires_t;
 
 
