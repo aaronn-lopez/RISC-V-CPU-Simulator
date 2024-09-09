@@ -11,7 +11,8 @@
 - Based on the digital logic circuit designs below
 
   ![Without hazard detection](IMG_4068.png)
-  ![With hazard detection](Screenshot 2024-08-12 at 3.28.19 PM.png)
+  
+  ![With hazard detection](Screenshot-2024-08-12-at-3.28.19-PM.png)
   
 
 ## How does it work?
@@ -27,3 +28,7 @@
 - The summary can be set to display register traces/stats or cache traces/stats
 
 ## Future Plans
+### I intend to continuously add to this project and make improvements. A short list of things I want to implement in the future are:
+- Full customizability through a menu that is user-friendly (Kind of like a GUI)
+- Hazard detection and resolving for the dual-issue pipeline
+- General cleaning up of code and adding more comments/descriptive comments for easier understanding
