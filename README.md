@@ -8,7 +8,11 @@
 - Selection between single or dual-issue instruction pipeline
 - Able to print out various execution statistics such as cache performance
 - Has hazard detection and resolving
-- Based on [this]() digital logic circuit design
+- Based on the digital logic circuit designs below
+
+  ![Without hazard detection](IMG_4068.png)
+  ![With hazard detection](Screenshot 2024-08-12 at 3.28.19 PM.png)
+  
 
 ## How does it work?
 ### Given we are using a single-issue pipeline, cache size of 4096 Bytes, and LRU replacement method:
