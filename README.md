@@ -4,4 +4,4 @@
 
 ## How does it work?
 - First takes a given text file with 32-bit hexadecimal numbers as input
-- Converts the bits to instructions based on the [RISC-V Instruction](RISC-V-CPU-Simulator/riscv-card.pdf) set 
+- Converts the bits to instructions based on the [RISC-V Instruction](riscv-card.pdf) set 
