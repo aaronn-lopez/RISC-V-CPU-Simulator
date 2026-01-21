@@ -2,6 +2,12 @@
 
 #### Demonstrational video found [here](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
 
+## What is it?
+The RISC-V simulator is a two-part project where I first coded the simulator in C which is detailed and fleshed out in this repository. 
+The second part was done in VHDL, Verilog, and TCL using Quartus and ModelSim. Here, I worked on different implementations for my execution 
+unit, logic unit, adders, and more. This was done with the intention of finding the best cost to performance ratio. Using real world pricing
+of a few FPGAs (such as Arria II), I am currently working on comparing my design to the alternatives.
+
 ## Features
 - Highly customizable cache (Aspects such as hit latency, associativity, and number of sets & blocks)
 - Option to use LFU or LRU replacement method
@@ -11,8 +17,8 @@
 - Based on the digital logic circuit design below
 
   ![Without hazard detection](IMG_4068.png)
-  
 
+  
 ## How does it work?
 ### Given we are using a single-issue pipeline, cache size of 4096 Bytes, and LRU replacement method:
 - First takes a given text file with 32-bit hexadecimal numbers as input
